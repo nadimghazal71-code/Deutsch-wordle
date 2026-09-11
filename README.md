@@ -1,0 +1,70 @@
+# Deutsch-Wordle
+
+A Wordle clone for German learners. The answer pool is a **fixed, curated list of
+A1 and A2 vocabulary** based on the Goethe-Institut word lists, you **pick the word
+length (3–8) before you play**, and when the round ends you get the word's
+**definition, article, plural and an example sentence** — so every round teaches
+you something whether you win or lose.
+
+> **Status:** design documentation. No code yet. These documents are the spec the
+> implementation should follow.
+
+## Why another Wordle
+
+Standard Wordle is a 5-letter English game with a huge answer pool. That is a bad
+vocabulary trainer for a beginner: the words are too obscure, the length is fixed,
+and you learn nothing when the round ends. This game changes three things:
+
+| Wordle | Deutsch-Wordle |
+| --- | --- |
+| Fixed 5 letters | You choose 3–8 letters before the round |
+| ~2,300 obscure answers | 878 curated A1/A2 words you actually need |
+| Answer revealed, no context | Definition card: article, plural, meaning, example |
+| English alphabet | German alphabet incl. `Ä Ö Ü ß` |
+
+## Documentation
+
+| Document | What's in it |
+| --- | --- |
+| [docs/game-design.md](docs/game-design.md) | Rules, length/attempt table, tile-colouring algorithm, German-specific decisions (umlauts, `ß`, capitalised nouns), hints, scoring |
+| [docs/word-list.md](docs/word-list.md) | Word entry schema, sourcing and curation rules, pool-size targets per length, validation script contract |
+| [docs/architecture.md](docs/architecture.md) | Tech stack, module boundaries, game state machine, daily-word selection, localStorage schema |
+| [docs/ui-ux.md](docs/ui-ux.md) | Screen flow, on-screen keyboard layout, the definition card, accessibility requirements |
+| [docs/roadmap.md](docs/roadmap.md) | Milestones from playable prototype to full release |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to add or fix a word |
+| [data/words.sample.json](data/words.sample.json) | Thirteen real entries showing every field and every tricky case |
+
+## The 60-second version
+
+1. **Setup screen.** Choose a word length, 3 to 8. The chooser shows how many words
+   exist at each length so you know what you're in for.
+2. **Play.** Type a German word of that length. Tiles turn 🟩 correct place,
+   🟨 in the word but elsewhere, ⬜ not in the word. `Ä Ö Ü ß` are letters in their
+   own right and have their own keys.
+3. **Attempts** scale with length: 5 for a 3–4 letter word, 6 for 5–6, 7 for 7–8.
+4. **Round ends** — won or lost — and the definition card appears: **die Tasse**,
+   plural *Tassen*, "ein kleines Ding, aus dem man Kaffee oder Tee trinkt", plus an
+   example sentence and the CEFR level.
+5. **Stats** are tracked per length, because a 3-letter streak and an 8-letter streak
+   are not the same achievement.
+
+## Quick start
+
+There is nothing to run yet. When the prototype lands (see
+[milestone M1](docs/roadmap.md#m1--playable-prototype)) this section becomes:
+
+```bash
+npm install
+npm run build:words   # validate + compile data/words/*.json into the shipped bundle
+npm run dev           # http://localhost:5173
+npm test
+```
+
+## Licence and attribution
+
+The Goethe-Institut word lists (*Goethe-Zertifikat A1: Start Deutsch 1 Wortliste*
+and *Goethe-Zertifikat A2 Wortliste*) are used as a **reference for which words
+belong at which level**. Definitions, example sentences and translations in this
+repository are **written for this project** — do not paste Goethe's definition or
+example text into the data files. See
+[docs/word-list.md § Sourcing and licence](docs/word-list.md#sourcing-and-licence).
