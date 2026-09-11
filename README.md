@@ -6,8 +6,9 @@ length (3–8) before you play**, and when the round ends you get the word's
 **definition, article, plural and an example sentence** — so every round teaches
 you something whether you win or lose.
 
-> **Status:** design documentation. No code yet. These documents are the spec the
-> implementation should follow.
+> **Status:** playable. 347 curated answers across all six lengths, 72 unit tests and
+> an end-to-end browser run that plays a real round. The documents in `docs/` are the
+> spec; where building it changed a decision, the doc says so and why.
 
 ## Why another Wordle
 
@@ -18,7 +19,7 @@ and you learn nothing when the round ends. This game changes three things:
 | Wordle | Deutsch-Wordle |
 | --- | --- |
 | Fixed 5 letters | You choose 3–8 letters before the round |
-| ~2,300 obscure answers | 878 curated A1/A2 words you actually need |
+| ~2,300 obscure answers | curated A1/A2 words you actually need (347 shipped, 878 eligible) |
 | Answer revealed, no context | Definition card: article, plural, meaning, example |
 | English alphabet | German alphabet incl. `Ä Ö Ü ß` |
 
@@ -32,7 +33,8 @@ and you learn nothing when the round ends. This game changes three things:
 | [docs/ui-ux.md](docs/ui-ux.md) | Screen flow, on-screen keyboard layout, the definition card, accessibility requirements |
 | [docs/roadmap.md](docs/roadmap.md) | Milestones from playable prototype to full release |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to add or fix a word |
-| [data/words.sample.json](data/words.sample.json) | Thirteen real entries showing every field and every tricky case |
+| [data/words.sample.json](data/words.sample.json) | Thirteen annotated entries showing every field and every tricky case |
+| [data/words/](data/words/) | The real curated word list, one file per length |
 
 ## The 60-second version
 
@@ -50,15 +52,50 @@ and you learn nothing when the round ends. This game changes three things:
 
 ## Quick start
 
-There is nothing to run yet. When the prototype lands (see
-[milestone M1](docs/roadmap.md#m1--playable-prototype)) this section becomes:
-
 ```bash
 npm install
-npm run build:words   # validate + compile data/words/*.json into the shipped bundle
+npm run build:words   # validate data/words/*.json and compile the shipped bundles
 npm run dev           # http://localhost:5173
-npm test
+npm test              # 72 unit tests
+npm run build         # build:words + typecheck + production bundle
 ```
+
+`npm run build:words` is a gate, not a formatter: it fails the build on a noun with
+no article, a definition containing its own headword, an example that does not use
+the word, or an answer pool that has dropped below 30 for an offered length.
+
+To play a round in a real browser (Chromium via Playwright):
+
+```bash
+npm run build && npx vite preview --port 4173 &
+npx tsx tests/e2e/play.ts      # plays a full round, checks the definition card
+npx tsx tests/e2e/narrow.ts    # 8-letter grid at 320px, checks for overflow
+```
+
+### Layout
+
+```
+src/core/     pure game logic — no DOM, no storage, no framework (the tests live here)
+src/ui/       setup screen, grid, 30-key keyboard, definition card, stats, settings
+src/store/    localStorage with a versioned schema
+src/data/     generated bundles — never hand-edited
+data/words/   the curated source of truth, one file per length
+scripts/      import_goethe.py (PDF -> review queue), build-words.ts (validate -> bundle)
+```
+
+## What is not done
+
+- **Guess validation defaults to `open`** (any letter sequence of the right length).
+  The `dictionary` tier works but is backed only by the curated lemmas and their
+  inflected forms, because shipping a full German word list is a licensing question —
+  see [docs/word-list.md § 4](docs/word-list.md#4-the-extended-guess-list).
+- **347 of 878 eligible answers are curated.** Every length has a real pool (31–68
+  words), but a daily player at one length will see a repeat inside three months.
+  Curating the rest is the largest remaining task.
+- **No audio, no hint UI, no PWA/offline** — see [docs/roadmap.md](docs/roadmap.md).
+- **Umlauts typed through an IME or a macOS compose sequence are not seen**, because
+  input is read from `keydown`. German keyboards, the `;a` dead key and the on-screen
+  `Ä Ö Ü ß` keys all work. [Details](docs/ui-ux.md#3-on-screen-keyboard).
 
 ## Licence and attribution
 

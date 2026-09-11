@@ -17,7 +17,8 @@ Two lists, both provided as PDFs and both parsed for this spec:
 | *Goethe-Zertifikat A2 – Complete Vocabulary List* | 21 pages, tabular: German / Art. / Type / English / Partizip II; self-reported 606 entries, 138 verbs | 561 | 383 playable |
 
 After merging and de-duplicating (**A1 wins on collision**, so a word shared by both
-levels is taught as A1): **1,270 unique lemmas → 959 playable → 878 answers.**
+levels is taught as A1): **1,270 unique lemmas → 959 playable → 878 eligible as
+answers.** Of those, **347 are curated and shipped** — see § 6.
 
 ### Measured pool, per length
 
@@ -39,8 +40,9 @@ Letter frequency across the pool, which is what a good opening guess should cove
 `e` 818, `n` 528, `r` 383, `a` 364, `t` 343, `i` 311, `s` 302, `h` 273, `l` 258,
 `u` 213, `g` 178, `c` 169. Umlauts and eszett: `ü` 44, `ä` 25, `ö` 21, `ß` 15.
 
-> Regenerate this table whenever the data changes — `npm run build:words` prints it.
-> Do not hand-edit the numbers.
+> These are the *source* numbers, printed by `python3 scripts/import_goethe.py`.
+> `npm run build:words` prints the same table for the words actually shipped (§ 6).
+> Do not hand-edit either set of figures.
 
 ### Sourcing and licence
 
@@ -122,8 +124,16 @@ happening in the first place.
 
 ## 3. Import pipeline
 
-`scripts/import-goethe.ts` turns the source PDFs into **reviewable drafts**, not
-into shipped data. It never writes `data/words/` directly.
+`scripts/import_goethe.py` turns the source PDFs into **reviewable drafts**, not into
+shipped data. It never writes `data/words/` directly. (Python, not TypeScript, because
+PDF text extraction is where the good libraries are; it needs `pip install pypdf`.)
+
+The PDFs are copyrighted and are **not** committed, so the script takes their paths:
+
+```bash
+python3 scripts/import_goethe.py --a1 path/to/A1_Wortliste.pdf \
+                                 --a2 path/to/A2_Vocabulary.pdf --out build/
+```
 
 ```
 PDF ──▶ text ──▶ parse ──▶ candidates.json ──▶ human review ──▶ data/words/<n>.json
@@ -202,17 +212,27 @@ prints the letter-frequency table.
 
 ## 4. The extended guess list
 
-Answers come from the curated 878. **Guesses**, under the default `dictionary` tier,
-are checked against a much larger list so a player can spend a guess on a probe
-like `essen` without it being a candidate answer.
+Answers come from the curated set. **Guesses** should be checked against a much larger
+list, so a player can spend a guess on a probe like `essen` without it being a
+candidate answer.
 
-Requirements: open licence, lowercase, one word per line, filtered to
-`/^[a-zäöüß]{3,8}$/`, NFC. A German Hunspell/`wordlist-german` dump filtered this way
-is around 50k words at these lengths — small enough to ship as a compressed set and
-check in memory, with no network call on the guess path.
+**What ships today** is smaller than that: `build:words` generates
+`src/data/guesses.json` from the curated lemmas plus their plurals and participles —
+540 words. Everything in it is either a word this project curated or a plain
+grammatical form of one, so there is no licensing question. It is enough to make the
+`dictionary` tier meaningful (`Tassen` and `gearbeitet` are accepted) but far too
+small to be the default: it would reject `essen`. Hence
+[the `open` default](game-design.md#5-guess-validation).
 
-Every curated lemma must also be present in the guess list; the build asserts this,
-because a valid answer that the game rejects as a guess is the worst possible bug.
+**What a real guess list needs:** an open licence, lowercase, one word per line,
+filtered to `/^[a-zäöüß]{3,8}$/`, NFC. A German Hunspell or `wordlist-german` dump
+filtered this way is around 50k words at these lengths — small enough to ship as a
+compressed set and check in memory, with no network call on the guess path. Adding one
+is what flips the default to `dictionary`.
+
+Every curated lemma must also be present in the guess list; the build and
+`tests/data.test.ts` both assert this, because a valid answer the game rejects as a
+guess is the worst possible bug.
 
 ---
 
@@ -236,3 +256,30 @@ The definition is what the player takes away. Rules:
 7. **Topics come from the A1 list's own thematic groups** where possible (`Essen und
    Trinken`, `Wohnen`, `Verkehr`, `Farben`, `Zahlen`, …) so the topic field can later
    drive themed practice sets.
+
+---
+
+## 6. What is curated so far
+
+347 of the 878 eligible answers are written and shipped. `npm run build:words` prints
+this table from the data itself:
+
+| Length | Answers | A1 | A2 | Nouns | Verbs | Other | With `ä ö ü ß` |
+| :----: | ------: | -: | -: | ----: | ----: | ----: | -------------: |
+| 3 | 31 | 21 | 10 | 21 | 1 | 9 | 3 |
+| 4 | 56 | 43 | 13 | 49 | 0 | 7 | 6 |
+| 5 | 63 | 39 | 24 | 59 | 0 | 4 | 4 |
+| 6 | 64 | 46 | 18 | 55 | 4 | 5 | 6 |
+| 7 | 65 | 47 | 18 | 50 | 6 | 9 | 5 |
+| 8 | 68 | 48 | 20 | 44 | 20 | 4 | 13 |
+| **Σ** | **347** | **244** | **103** | **278** | **31** | **38** | **37** |
+
+Every length clears the 30-answer tripwire, so all six are offered. The honest caveat:
+at 31–68 words a daily player will meet a repeat within three months. Curating the
+remaining 531 eligible answers is the largest open task in the project — and it is
+pure content work, since the pipeline and the validation gate already exist.
+
+The curated set was chosen for **teachability**, not coverage: concrete nouns a
+beginner meets first (`Haus`, `Brot`, `Bahnhof`), the verbs they need early
+(`arbeiten`, `trinken`, `sprechen`), and enough `ä ö ü ß` words at every length that
+the umlaut keys matter from day one.

@@ -67,10 +67,21 @@ Key states use the max-merge rule from
 unused. A key never downgrades.
 
 **Physical keyboard** works in parallel: letters type, `Enter` submits, `Backspace`
-deletes. `ae`/`oe`/`ue`/`ss` collapse to `ä`/`ö`/`ü`/`ß` as you type (and long-press
-does the same on touch) — input convenience only, per
-[architecture.md § 4](architecture.md#4-normalisation-one-place-only). Show the
-aliases once, as a hint on the setup screen: *Tipp: „ae" wird zu „ä"*.
+deletes. For umlauts, `;` (or `"`) acts as a dead key — `;a` → `ä`, `;s` → `ß` —
+which is input convenience only, per
+[architecture.md § 4](architecture.md#4-normalisation-one-place-only). Show it once
+as a hint on the setup screen: *Tipp: „;u" wird zu „ü" — oder tippe auf Ä Ö Ü ß*.
+
+Digraph collapsing (`ss` → `ß`) is deliberately **not** offered: it would break the
+26 pool words that legitimately contain `ss`. See
+[game-design.md § 4](game-design.md#4-the-german-alphabet-ä-ö-ü-ß).
+
+**Known limitation.** Input is read from `keydown`, so a character delivered *without*
+a key event — an IME, a macOS compose sequence, `insertText` — never reaches the game.
+A German physical keyboard fires `keydown` with `key: 'ö'` and works; everyone else has
+the dead key and the on-screen `Ä Ö Ü ß` keys, which is why this is documented rather
+than worked around. Closing it properly means a focused offscreen editable element
+listening to `beforeinput`, which costs more in accessibility than it buys.
 
 ## 4. The definition card
 

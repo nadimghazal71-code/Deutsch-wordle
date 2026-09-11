@@ -1,0 +1,27 @@
+{
+  "name": "deutsch-wordle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A Wordle clone for German learners, with a curated Goethe A1/A2 word list and a definition at the end of every round.",
+  "scripts": {
+    "dev": "vite",
+    "predev": "npm run build:words",
+    "build": "npm run build:words && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run build:words",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:words": "tsx scripts/build-words.ts",
+    "import:goethe": "python3 scripts/import_goethe.py"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "playwright": "^1.63.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

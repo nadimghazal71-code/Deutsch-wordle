@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+*.log
+
+# Generated from data/words/ by `npm run build:words`. Not committed, so it can
+# never drift from the curated source of truth; the predev/pretest hooks rebuild it.
+src/data/

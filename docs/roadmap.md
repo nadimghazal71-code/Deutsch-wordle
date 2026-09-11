@@ -3,65 +3,75 @@
 Ordered so that something playable exists as early as possible, and so that the
 riskiest work — the data — starts first and runs in parallel throughout.
 
+**M0, M1 and most of M2/M3 are done.** What remains is mostly content (curating the
+other 531 answers) plus the licensed guess list. Boxes below are ticked against what
+is actually in the repository.
+
 ---
 
-## M0 — Data foundation
+## M0 — Data foundation ✅
 
 The word list gates everything else, so it goes first.
 
-- [ ] `scripts/import-goethe.ts`: parse both source PDFs into `candidates.json` +
-      `review-queue.md` ([word-list.md § 3](word-list.md#3-import-pipeline))
-- [ ] `scripts/build-words.ts`: validation with build-failing rules, pool table output
-- [ ] Curate lengths **4 and 5** end to end (~340 entries) as the reference quality bar
-- [ ] Resolve the flagged cases: abbreviated plurals (`der Apfel, -Ä`), missing
-      plurals, `Morgen`/`morgen`, slashed alternatives
+- [x] `scripts/import_goethe.py`: parses both source PDFs into `candidates.json` +
+      `review-queue.md` ([word-list.md § 3](word-list.md#3-import-pipeline)) — 1,270
+      lemmas, 390 ready to curate, 491 flagged for review
+- [x] `scripts/build-words.ts`: validation with build-failing rules, pool table output
+- [x] Curated **all six lengths** (347 entries), not just 4 and 5 — every length clears
+      the 30-answer tripwire
+- [x] Resolved the flagged cases for every curated word: plurals supplied by hand,
+      `Morgen`/`morgen` split, slashed alternatives picked
 
-**Done when** `npm run build:words` is green on lengths 4–5 and the review queue for
-those lengths is empty.
+**Done:** `npm run build:words` is green on all six lengths.
 
-## M1 — Playable prototype
+## M1 — Playable prototype ✅
 
-- [ ] `core/score.ts` with the full test table from
+- [x] `core/score.ts` with the full test table from
       [architecture.md § 8](architecture.md#8-testing) passing — including the
       `tasse`/`essen` repeated-letter case and the `straße` eszett case
-- [ ] `core/attempts.ts`, `core/keyboard-state.ts`, `core/normalise.ts`
-- [ ] Game reducer and the setup → playing → reveal flow
-- [ ] Grid, 30-key QWERTZ keyboard, physical keyboard with `ae`→`ä` aliases
-- [ ] Definition card with every required field
-- [ ] Practice mode only, lengths 4–5 only, `open` validation
+- [x] `core/attempts.ts`, `core/keyboard-state.ts`, `core/normalise.ts`
+- [x] Game reducer and the setup → playing → reveal flow
+- [x] Grid, 30-key QWERTZ keyboard, physical keyboard with the `;a`→`ä` dead key
+- [x] Definition card with every required field
+- [x] Both modes, all six lengths, all three validation tiers
 
-**Done when** a round can be played start to finish at length 4 and 5 and the card
-shows a real definition. Ugly is fine. Wrong tile colours are not.
+**Done:** `npx tsx tests/e2e/play.ts` plays a real round in Chromium and checks the
+card, the keyboard colouring, the dead key, and that `ss` stays `ss`.
 
-## M2 — Complete game
+## M2 — Complete game — mostly done
 
-- [ ] Curate lengths **3, 6, 7, 8** (~540 more entries); apply the 3-letter mitigations
-      from [game-design.md § 2](game-design.md#the-3-letter-problem--a-real-constraint-not-a-rounding-error)
-- [ ] Extended guess list + `dictionary` validation tier, with `strict`/`open` in settings
-- [ ] Daily mode: seeded permutation selection, midnight reset, one puzzle per length
-- [ ] Per-length stats, streaks, guess distribution, words-seen
-- [ ] localStorage persistence with `schema` versioning and mid-round resume
-- [ ] Emoji share grid that cannot leak the answer
+- [x] All lengths curated to a playable pool; the 3-letter mitigations from
+      [game-design.md § 2](game-design.md#the-3-letter-problem--a-real-constraint-not-a-rounding-error)
+      are in (pool size shown per length, a `Kleiner Wortschatz` note, no-repeat cycling)
+- [ ] **Curate the remaining 531 eligible answers** — the largest open task
+- [x] All three validation tiers in settings
+- [ ] **A licensed German guess list**, which is what flips the default to `dictionary`
+      ([word-list.md § 4](word-list.md#4-the-extended-guess-list))
+- [x] Daily mode: seeded permutation selection, local midnight reset, one puzzle per length
+- [x] Per-length stats, streaks, guess distribution, words-seen
+- [x] localStorage persistence with `schema` versioning and mid-round resume
+- [x] Emoji share grid that cannot leak the answer
 
-**Done when** all six lengths are playable in both modes and stats survive a reload.
+All six lengths are playable in both modes and stats survive a reload; the two open
+items above are content and licensing, not code.
 
-## M3 — Polish and access
+## M3 — Polish and access — mostly done
 
-- [ ] Colour-blind palette + tile glyphs; contrast audited in all four
-      theme × palette combinations
-- [ ] Screen-reader pass: tile labels, live-region announcements, `lang` attributes,
-      focus management on the card
-- [ ] `prefers-reduced-motion`; reveal and shake animations
-- [ ] Light/dark theming via tokens
-- [ ] Layout verified at 320px with an 8-letter grid
+- [x] Colour-blind palette + tile glyphs, both toggleable and remembered
+- [ ] Contrast **audited with a tool** in all four theme × palette combinations
+- [x] Tile labels, live-region announcements, `lang` attributes, focus management on
+      the card
+- [ ] Verify with a **real screen reader** — the markup is right, the experience is untested
+- [x] `prefers-reduced-motion`; reveal and shake animations
+- [x] Light/dark theming via tokens, with a manual override
+- [x] Layout verified at 320px with an 8-letter grid (`tests/e2e/narrow.ts`)
 - [ ] Hints (off by default), per [game-design.md § 8](game-design.md#8-hints--optional-off-by-default)
 
-**Done when** the game is fully playable with a screen reader and keyboard only, and
-nothing depends on colour alone.
+Nothing depends on colour alone. The remaining work is verification, not construction.
 
 ## M4 — Release
 
-- [ ] Complete curation of all 878 answers; every entry human-reviewed
+- [ ] Complete curation of all 878 eligible answers; every entry human-reviewed
 - [ ] About screen with Goethe-Institut attribution
 - [ ] PWA: installable, playable offline (the whole game is static — this is nearly free)
 - [ ] Static deploy + CI running `build:words`, typecheck and tests on every PR

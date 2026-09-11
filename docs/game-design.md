@@ -74,14 +74,19 @@ beginner wants on day one.
 ### Why attempts scale the way they do
 
 Classic Wordle gives 6 attempts for 5 letters. The rule here is
-`attempts = clamp(length + 1, 5, 7)`:
+`attempts = ceil(length / 2) + 3` — **one extra attempt for every two letters**,
+anchored so that 5 letters keeps Wordle's 6:
 
-- **Short words get a floor of 5.** `length + 1` would give a 3-letter word only 4
-  attempts. A 3-letter guess tests just three letters, so each one narrows the field
-  slowly, and the pool's initials cluster — 34 answers share only **16 distinct
-  first letters**, with `Tag`, `Tee`, `Tür`, `tot` and `tun` all on `T`. Four
-  attempts there is closer to luck than deduction.
-- **Long words get a cap of 7, and it is enough**, because German long words are
+| Length | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Attempts | 5 | 5 | 6 | 6 | 7 | 7 |
+
+- **The low end stays at 5.** Scaling straight off the length would leave a 3-letter
+  word with 4 attempts. A 3-letter guess tests just three letters, so each one
+  narrows the field slowly, and the pool's initials cluster — 34 answers share only
+  **16 distinct first letters**, with `Tag`, `Tee`, `Tür`, `tot` and `tun` all on
+  `T`. Four attempts there is closer to luck than deduction.
+- **The high end stops at 7, and it is enough**, because German long words are
   front-loaded with predictable morphology: **35% of the 8-letter pool** begins with
   `ab-`, `an-`, `auf-`, `aus-`, `be-`, `ge-`, `ver-` or `zu-` (24% at 7 letters).
   Once a player learns that, a long word collapses in two or three guesses. More
@@ -179,11 +184,19 @@ it would teach learners the wrong spelling. Spelling is the skill being trained.
 Consequences to implement:
 
 - **The on-screen keyboard has 30 keys.** Layout in [ui-ux.md § Keyboard](ui-ux.md#3-on-screen-keyboard).
-- **Typing aliases for physical keyboards.** Most learners are on a QWERTY layout
-  with no umlaut keys. Typing `ae`, `oe`, `ue`, `ss` in the active tile collapses to
-  `ä`, `ö`, `ü`, `ß`, and `Alt`/long-press on the base vowel does the same. The
-  alias fires only when the resulting word length still fits; it is an input
-  convenience, never a scoring rule.
+- **A dead key for physical keyboards.** Most learners are on a layout with no
+  umlaut keys, so `;` (or `"`) followed by `a`, `o`, `u`, `s` produces `ä`, `ö`,
+  `ü`, `ß`. It is an input convenience, never a scoring rule.
+
+  > **This replaces an earlier design, and the correction is worth recording.** The
+  > first version of this spec collapsed the digraphs `ae oe ue ss` — the standard
+  > German transliteration. Measuring the vocabulary killed it: **`ss` occurs
+  > legitimately in 26 pool words** (`essen`, `Tasse`, `Kasse`, `Klasse`, `besser`,
+  > `bisschen` …) and **`ue` in 9** (`teuer`, `feuer`, `neue`, `dauern` …), against
+  > only 15 words containing `ß` and 44 containing `ü`. Collapsing them would have
+  > made `tasse` untypeable — it would come out `taße` — breaking more words than it
+  > enabled. A dead key cannot collide, because `;` and `"` are not letters, and it
+  > behaves identically for all four characters.
 - **Guesses are compared on the exact letters.** No `String.normalize('NFD')`
   stripping, no `ß → ss` folding in the comparison path. See
   [architecture.md § Normalisation](architecture.md#4-normalisation-one-place-only).
@@ -205,15 +218,22 @@ tiers, and the tier is a **setting** because the right answer differs by audienc
 | Tier | Accepts | For |
 | --- | --- | --- |
 | `strict` | Only words in the A1/A2 answer pool | Players who want the pool to be the dictionary |
-| `dictionary` *(default)* | Any word in the extended German word list (§ [word-list.md](word-list.md#4-the-extended-guess-list)) | Everyone. Lets you use `essen` to probe even if it is not a possible answer |
-| `open` | Any sequence of German letters | Absolute beginners, and anyone who finds rejection discouraging |
+| `dictionary` | Any word in the shipped guess list (§ [word-list.md](word-list.md#4-the-extended-guess-list)) | Everyone. Lets you use `Tassen` to probe even if the plural is not a possible answer |
+| `open` *(default)* | Any sequence of German letters | Absolute beginners, and anyone who finds rejection discouraging |
 
 Rejected guesses do **not** consume an attempt. They shake the row and announce
 *„Das Wort kenne ich nicht"* via the live region. `open` mode never rejects.
 
-Default is `dictionary`: `strict` is frustrating (you cannot spend a guess on a
-letter-probe), and `open` lets a player brute-force letter positions with nonsense,
-which trains nothing.
+`strict` is frustrating — you cannot spend a guess on a letter-probe — and `open`
+lets a player brute-force letter positions with nonsense, which trains nothing. So
+`dictionary` is the right default **once a real dictionary exists**.
+
+> **The shipped default is `open`, and that is a compromise, not the design.** The
+> guess list that ships contains only the curated lemmas and their inflected forms
+> (540 words), because a full German word list is a licensing question this project
+> has not settled. With a list that small, `dictionary` would reject `essen` — a word
+> squarely in the A1 vocabulary — which is a worse failure than accepting nonsense.
+> When a properly-licensed word list lands, the default becomes `dictionary`.
 
 ---
 
