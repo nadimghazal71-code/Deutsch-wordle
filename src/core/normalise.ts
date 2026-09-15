@@ -18,9 +18,21 @@ export function letters(word: string): string[] {
   return [...word];
 }
 
-/** Lowercase for comparison. Asserts NFC so `a`+U+0308 can never masquerade as `ä`. */
+/**
+ * Lowercase for comparison, normalising to NFC so `a`+U+0308 can never masquerade
+ * as `ä`.
+ *
+ * The guard is for Hermes, React Native's engine, which has historically shipped
+ * without `String.prototype.normalize` (it needs ICU). Falling back to the raw string
+ * is safe here rather than merely convenient: `scripts/build-words.ts` fails the build
+ * on any lemma that is not already NFC, and both keyboards emit NFC literals, so on an
+ * engine without `normalize` there is nothing left to normalise. It is a real
+ * difference in behaviour only for decomposed input typed through an IME, which that
+ * engine cannot deliver to this app anyway (see docs/ui-ux.md § 3).
+ */
 export function toComparable(word: string): string {
-  return word.normalize('NFC').toLowerCase();
+  const nfc = typeof word.normalize === 'function' ? word.normalize('NFC') : word;
+  return nfc.toLowerCase();
 }
 
 export function isGermanLetter(ch: string): boolean {

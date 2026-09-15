@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { recordResult, statsFor, emptyStats, defaultSettings } from '../src/store/persist.js';
-import type { Store } from '../src/store/persist.js';
+import { recordResult, statsFor, emptyStats, defaultSettings } from '../src/store/stats.js';
+import type { Store } from '../src/store/stats.js';
 
 const base = (): Store => ({ schema: 1, settings: defaultSettings(), inProgress: {}, dailyDone: {}, stats: {} });
 

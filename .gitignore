@@ -3,6 +3,15 @@ dist/
 build/
 *.log
 
-# Generated from data/words/ by `npm run build:words`. Not committed, so it can
-# never drift from the curated source of truth; the predev/pretest hooks rebuild it.
-src/data/
+# Expo / React Native
+mobile/.expo/
+mobile/.expo-export/
+mobile/android/
+mobile/ios/
+mobile/expo-env.d.ts
+
+# NOTE: src/data/ is generated from data/words/ by `npm run build:words`, but it IS
+# committed. The mobile app imports it, and a cloud build (EAS) only ever sees
+# committed files — it cannot run the web project's generation step first. Drift is
+# guarded instead: build:words runs before `npm run build`/`npm test`, and
+# tests/data.test.ts fails if the bundles disagree with the curated source.

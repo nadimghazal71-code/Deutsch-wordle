@@ -197,3 +197,43 @@ Plus: `attemptsFor` matching the table (5,5,6,6,7,7); keyboard state never downg
 green→yellow; `dailyAnswer` is stable for a fixed (date, length) and covers the whole
 pool over one cycle; every curated lemma passes guess validation in every tier that
 should accept it.
+
+---
+
+## 9. The Android app
+
+`mobile/` is a React Native app on Expo SDK 57. It exists because "run it on a phone"
+was a real requirement; the web app is unchanged and still the reference
+implementation.
+
+**What made this cheap** is the rule from § 1 that `core/` imports nothing. The port
+reused `src/core` and `src/data` as-is and added no game logic. What had to be
+rewritten was the view layer, the styles and the storage adapter.
+
+**The store was split** to make that possible without duplicating rules:
+
+| File | Role |
+| --- | --- |
+| `src/store/stats.ts` | The persisted shape, `hydrate`/`migrate`, and the stats rules. No I/O |
+| `src/store/persist.ts` | Web adapter: `localStorage` in, `localStorage` out |
+| `mobile/storage.ts` | Mobile adapter: `AsyncStorage`, the same `hydrate` and rules, async |
+
+So a schema change cannot be handled one way on web and another on mobile.
+
+**Three platform decisions** that have no web equivalent, each documented at the
+point of use in `mobile/`:
+
+1. **Metro cannot resolve `core`'s `.js` extensions.** `src/core` is Node-style ESM,
+   where `'./types.js'` means `types.ts`. Vite, vitest and tsx remap that; Metro
+   fails. `mobile/metro.config.js` adds a `resolveRequest` hook that strips the
+   extension.
+2. **Android safe areas.** RN's own `SafeAreaView` does nothing on Android, and
+   SDK 54+ is edge-to-edge by default, so `react-native-safe-area-context` supplies
+   the insets. Without it the header sits under the status bar.
+3. **`String.prototype.normalize` is guarded** in `core/normalise.ts`, because Hermes
+   has historically shipped without it. Safe because `build-words.ts` already fails
+   the build on any lemma that is not NFC.
+
+The APK is built with `npm run apk` in `mobile/` (prebuild + `gradlew
+assembleRelease`) or on EAS. See [mobile/README.md](../mobile/README.md) — including
+what has been verified and what has not.

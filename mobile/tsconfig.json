@@ -1,0 +1,15 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "paths": {
+      "@core/*": ["../src/core/*"],
+      "@store/*": ["../src/store/*"],
+      "@data/*": ["../src/data/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/core/**/*.ts", "../src/store/stats.ts"]
+}

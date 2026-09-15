@@ -6,9 +6,11 @@ length (3–8) before you play**, and when the round ends you get the word's
 **definition, article, plural and an example sentence** — so every round teaches
 you something whether you win or lose.
 
-> **Status:** playable. 347 curated answers across all six lengths, 72 unit tests and
-> an end-to-end browser run that plays a real round. The documents in `docs/` are the
-> spec; where building it changed a decision, the doc says so and why.
+> **Status:** playable on the web, and there is an Android app on Expo SDK 57 that is
+> ready to build ([mobile/](mobile/README.md)). 347 curated answers across all six
+> lengths, 72 unit tests and an end-to-end browser run that plays a real round. The
+> documents in `docs/` are the spec; where building it changed a decision, the doc
+> says so and why.
 
 ## Why another Wordle
 
@@ -72,15 +74,29 @@ npx tsx tests/e2e/play.ts      # plays a full round, checks the definition card
 npx tsx tests/e2e/narrow.ts    # 8-letter grid at 320px, checks for overflow
 ```
 
+### Android app
+
+```bash
+cd mobile && npm install && npm run apk
+```
+
+Expo SDK 57. It imports the game logic and the word list from this repository rather
+than copying them, so a rules fix or a new word fixes both apps. Prerequisites, the
+EAS alternative and what has and has not been verified are in
+[mobile/README.md](mobile/README.md).
+
 ### Layout
 
 ```
-src/core/     pure game logic — no DOM, no storage, no framework (the tests live here)
-src/ui/       setup screen, grid, 30-key keyboard, definition card, stats, settings
-src/store/    localStorage with a versioned schema
-src/data/     generated bundles — never hand-edited
+src/core/     pure game logic — no DOM, no storage, no framework (shared with mobile)
+src/store/    the persisted shape, migrations and stats rules (shared with mobile)
+              persist.ts is the web localStorage adapter; mobile/storage.ts is AsyncStorage
+src/ui/       web only: setup screen, grid, 30-key keyboard, definition card, stats
+src/data/     generated bundles — never hand-edited, but committed (mobile builds need them)
+mobile/       the Expo app: theme.ts, components/, App.tsx
 data/words/   the curated source of truth, one file per length
 scripts/      import_goethe.py (PDF -> review queue), build-words.ts (validate -> bundle)
+tests/        72 unit tests over src/core and src/store, plus two Chromium e2e runs
 ```
 
 ## What is not done
