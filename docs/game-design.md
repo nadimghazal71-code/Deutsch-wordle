@@ -372,6 +372,27 @@ truth. Practice games count toward played/won and words-seen, never toward strea
 
 ---
 
+## 12. The word list — the answer key, browsable
+
+The app is a vocabulary trainer as much as a puzzle, so the whole answer set is
+readable **from the main menu, outside a round**: `📖 Wortliste ansehen`.
+
+- Every one of the 347 answers, alphabetical, showing the headword with its article
+  (`die Tasse`), the English gloss and the CEFR level.
+- **Search** over the German word, the English gloss, the definition and the topic —
+  so a learner who knows only the meaning can find the word. Searching folds umlauts
+  (`kase` finds `Käse`, `strasse` finds `Straße`), because most learners are typing on
+  a keyboard without them. This fold is **search only**: on the guess path `ä` and `a`
+  are different letters and folding them would break the game.
+- **Filters** by length and by level.
+- Tapping a word opens the same content as the end-of-round card — article, plural or
+  Partizip II, definition, example — but with no win/loss line, because this is not a
+  round.
+
+**This cannot spoil the daily puzzle.** Knowing all 63 five-letter answers does not
+tell you which one today is. The filtering lives in `core/vocabulary.ts` and is shared
+by both apps.
+
 ## 11. Open questions
 
 Decisions deliberately deferred, to be settled with a playable prototype:

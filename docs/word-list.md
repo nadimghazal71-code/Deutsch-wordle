@@ -229,7 +229,7 @@ that makes a Wordle clone feel wrong:
 | Source | A full German word list, ~1.9M inflected forms, supplied for this project |
 | Committed | `data/dictionary/<n>.txt` — filtered, lowercased, NFC, sorted, one word per line (~800 KB) |
 | Generated | `src/data/guesses.<n>.json` by `npm run build:words` |
-| Total accepted | **97,391 forms** at 3–8 letters (98,035 from the list, minus 644 given names) |
+| Total accepted | **96,896 forms** at 3–8 letters (98,035 from the list, minus 1,140 names) |
 
 | Length | 3 | 4 | 5 | 6 | 7 | 8 |
 | --- | --: | --: | --: | --: | --: | --: |
@@ -257,13 +257,15 @@ the names have to be listed explicitly.
 
 | | |
 | --- | --- |
-| Sources | A supplied list of ~2,000 historical German first names, plus `data/dictionary/names-common.txt` for the modern ones it omits (Jürgen, Michael, Thomas, Anna) |
-| Committed | `data/dictionary/excluded-names.txt` — 2,210 names |
-| Actually removed | **644** (the rest, like `adalbald`, were never in the word list) |
+| Sources | 2,000 German surnames and 500 + 500 given names (MIT, © 2023 Alexander L. — see [CREDITS](../data/dictionary/CREDITS.md)); a supplied list of ~2,000 historical German first names; `data/dictionary/names-common.txt` for modern names the historical list omits |
+| Committed | `data/dictionary/excluded-names.txt` — 3,724 names |
+| Actually removed | **1,140** (the rest, like `adalbald`, were never in the word list) |
 
-The danger is that **many German first names are also ordinary words**, so blind
-removal would reject real German. `scripts/import_names.py` therefore protects a name
-when any of three things is true, and prints what it protected:
+The danger is that **very many German names are also ordinary words** — surnames
+especially, since they are largely occupations and nature words. The scale is easy to
+underestimate: **50 of the 347 answers are also German surnames.** Blind removal would
+have made one answer in seven unwinnable. `scripts/import_names.py` therefore protects
+a name when any of four things is true, and prints what each rule saved:
 
 1. **It is a curated answer.** Seven are: `alt`, `ecke`, `gast`, `ort`, `rot`, `wald`,
    `wolke`. Removing one of these would show a player a valid answer being refused,
@@ -271,8 +273,20 @@ when any of three things is true, and prints what it protected:
 2. **It is a Goethe A1/A2 lemma** — the vocabulary the app teaches: `land`, `bald`,
    `dank`, `frei`, `hart`, `rein`.
 3. **It also exists in lowercase in the word list**, meaning a verb, adjective or
-   adverb of the same spelling exists: `kraft`, `linde`, `ernst`, `frank`, `rosa`,
-   `max`, `traut`.
+   adverb of the same spelling exists: `kraft`, `ernst`, `frank`, `rosa`, `max`,
+   `klug`, `grau`, `frisch`, `hoch`, `leicht`.
+4. **It has a noun inflection family in the word list.** This is the rule that makes
+   surnames tractable. A German common noun takes plural and genitive endings
+   (`Stein` → `Steine`, `Steines`, `Steinen`; `Abt` → `Äbte`), while a surname takes
+   at most a genitive `-s` — which is why `-s` alone is not treated as evidence. It
+   protects 672 words, among them `müller`, `fischer`, `weber`, `koch`, `bauer`,
+   `richter`, `adler`, `stein`, `linde`, `engel`, `löwe`, `bär`, `krone`, `abt`.
+
+   Measured against a hand-labelled sample, rule 4 protected **51 of 51** real nouns
+   and correctly excluded 24 of 27 pure names. The three it over-protects — `klaus`
+   (because `Klause`, a hermitage, is a word), `anna` and `maria` — stay guessable.
+   **That is the safe direction of error**: a lingering name is cosmetic, while
+   rejecting a real word breaks the game. `tests/dictionary.test.ts` pins it.
 
 Two more needed a human, because they pass none of those rules and are still words:
 **`Kai`** (a quay) and **`Jasmin`** (the shrub). They are commented out of

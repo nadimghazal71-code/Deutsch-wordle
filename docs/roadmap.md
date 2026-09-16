@@ -50,6 +50,9 @@ card, the keyboard colouring, the dead key, and that `ss` stays `ss`.
 - [x] Given names rejected as guesses, with real words that are also names protected
       ([word-list.md § 4](word-list.md#given-names-are-excluded-carefully))
 - [x] `Aufgeben` — give up and see the word, as a two-tap confirm
+- [x] A browsable word list from the main menu: every answer with its meaning,
+      searchable in German or English
+      ([game-design.md § 12](game-design.md#12-the-word-list--the-answer-key-browsable))
 - [ ] Confirm the guess list's licence and add attribution before distributing
 - [ ] A frequency list, to cut place names and the word list's own oddities in one pass
 - [x] Daily mode: seeded permutation selection, local midnight reset, one puzzle per length

@@ -13,13 +13,14 @@ interface Props {
   onChoose: (length: Length) => void;
   onMode: (mode: 'daily' | 'practice') => void;
   onStart: () => void;
+  onWordList: () => void;
 }
 
 /**
  * The chooser shows the real answer-pool size under each length. That is the honest
  * way to surface a small pool rather than hiding it.
  */
-export function Setup({ poolSizes, selected, mode, dailyDone, theme, onChoose, onMode, onStart }: Props) {
+export function Setup({ poolSizes, selected, mode, dailyDone, theme, onChoose, onMode, onStart, onWordList }: Props) {
   const blocked = selected !== null && mode === 'daily' && dailyDone(selected);
 
   return (
@@ -75,6 +76,18 @@ export function Setup({ poolSizes, selected, mode, dailyDone, theme, onChoose, o
         />
       </View>
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Wortliste ansehen — alle Wörter mit Bedeutung"
+        onPress={onWordList}
+        style={({ pressed }) => [
+          styles.wordListButton,
+          { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Text style={[styles.wordListLabel, { color: theme.text }]}>📖  Wortliste ansehen</Text>
+      </Pressable>
+
       <Text style={[styles.hint, { color: theme.textDim }]}>Tipp: Ä Ö Ü ß sind eigene Tasten auf der Tastatur.</Text>
     </View>
   );
@@ -118,5 +131,14 @@ const styles = StyleSheet.create({
   modeOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderWidth: 2, borderRadius: 10 },
   modeLabel: { fontSize: 16 },
   modeNote: { fontSize: 11 },
+  wordListButton: {
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  wordListLabel: { fontSize: 15, fontWeight: '600' },
   hint: { fontSize: 13 },
 });

@@ -22,6 +22,7 @@ import { GiveUpRow, Keyboard } from './components/Keyboard';
 import { DefinitionCard } from './components/DefinitionCard';
 import { SettingsCard, StatsCard } from './components/Overlays';
 import { Setup } from './components/Setup';
+import { WordList } from './components/WordList';
 
 import words3 from '@data/words.3.json';
 import words4 from '@data/words.4.json';
@@ -45,7 +46,7 @@ const POOLS = Object.fromEntries(LENGTHS.map((n) => [n, answersOfLength(WORDS, n
 const POOL_SIZES = Object.fromEntries(LENGTHS.map((n) => [n, POOLS[n].length])) as Record<Length, number>;
 const BY_ID = new Map(WORDS.map((w) => [w.id, w]));
 
-type Overlay = 'none' | 'reveal' | 'stats' | 'settings';
+type Overlay = 'none' | 'reveal' | 'stats' | 'settings' | 'words';
 
 export default function App() {
   return (
@@ -321,6 +322,7 @@ function Game() {
             onChoose={setSelectedLength}
             onMode={setMode}
             onStart={() => { if (ready) startRound(selectedLength, mode); }}
+            onWordList={() => setOverlay('words')}
           />
         ) : (
           <>
@@ -364,6 +366,10 @@ function Game() {
           theme={theme}
           onClose={() => setOverlay(isRoundOver(game) ? 'reveal' : 'none')}
         />
+      ) : null}
+
+      {overlay === 'words' ? (
+        <WordList words={WORDS} theme={theme} onClose={() => setOverlay('none')} />
       ) : null}
 
       {overlay === 'settings' ? (

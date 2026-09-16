@@ -449,3 +449,68 @@ button {
   font-size: 0.85rem;
   z-index: 20;
 }
+
+/* ─────────────────────────────── word list ─────────────────────────────── */
+.card-tall { max-height: 85vh; display: flex; flex-direction: column; }
+
+.search {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 0.6rem; }
+
+.chip {
+  padding: 0.3rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.word-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.word-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 0.6rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.word-row:hover { background: var(--surface); }
+
+.word-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.word-row-word { font-size: 1rem; font-weight: 600; }
+.word-row-level { flex: none; font-size: 0.68rem; font-weight: 700; color: var(--text-dim); }
+.word-row-gloss { font-size: 0.85rem; color: var(--text-dim); }
+
+.empty { margin: 1.5rem 0; text-align: center; color: var(--text-dim); }
+
+.secondary-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.secondary-button:hover { border-color: var(--border-strong); }

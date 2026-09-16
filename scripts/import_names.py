@@ -16,6 +16,12 @@ needs, and the protections are explicit:
   2. it is never a Goethe A1/A2 lemma — the vocabulary the app teaches
   3. it is never a string that also exists in lowercase in the word list, which means
      a verb, adjective or adverb of the same spelling exists (rot, hart, frei, rein)
+  4. it is never a string with a noun inflection family in the word list. German
+     surnames are mostly occupations and nature words, so a great many of them are
+     ordinary nouns: Müller, Fischer, Weber, Koch, Bauer, Schneider, Richter, Adler,
+     Stein, Linde. A common noun takes plural and genitive endings (Stein -> Steine,
+     Steines, Steinen; Abt -> Äbte); a surname takes at most a genitive -s, which is
+     why -s alone is not treated as evidence.
 
     python3 scripts/import_names.py \
         --names path/to/firstnames.txt \
@@ -43,6 +49,32 @@ def normalise(text: str) -> str:
     return unicodedata.normalize("NFC", text.strip()).lower()
 
 
+UMLAUT = str.maketrans({"a": "ä", "o": "ö", "u": "ü"})
+
+
+def umlauted(word: str) -> str | None:
+    """Umlaut the last a/o/u, the way a German plural does: Abt -> Äbt(e)."""
+    for i in range(len(word) - 1, -1, -1):
+        if word[i] in "aou":
+            return word[:i] + word[i].translate(UMLAUT) + word[i + 1:]
+    return None
+
+
+def has_noun_family(word: str, forms: set[str]) -> bool:
+    """Protection 4 — see the module docstring."""
+    stems = [word]
+    stem = umlauted(word)
+    if stem:
+        stems.append(stem)
+    return any(s + suffix in forms for s in stems for suffix in ("e", "en", "er", "n", "es", "ern"))
+
+
+def read_json_names(path: Path) -> set[str]:
+    """A JSON array of names, as published by the germanenames data sets."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {normalise(x) for x in data if isinstance(x, str)}
+
+
 def read_names(path: Path) -> set[str]:
     """The supplied list is Latin-1, comma separated, with CRLF line endings."""
     raw = path.read_bytes()
@@ -68,6 +100,8 @@ def main() -> None:
     ap.add_argument("--names", type=Path, required=True)
     ap.add_argument("--extra", type=Path, nargs="*", default=[],
                     help="further name files, one per line, # for comments")
+    ap.add_argument("--json", type=Path, nargs="*", default=[],
+                    help="further name files as JSON arrays")
     ap.add_argument("--list", type=Path, required=True, help="the full German word list")
     ap.add_argument("--goethe", type=Path, help="candidates.json from import_goethe.py")
     ap.add_argument("--words", type=Path, default=Path("src/data"), help="generated answer bundles")
@@ -83,6 +117,10 @@ def main() -> None:
             name = normalise(line)
             if ALLOWED.fullmatch(name):
                 names.add(name)
+    for path in args.json:
+        if not path.exists():
+            sys.exit(f"no such file: {path}")
+        names |= {n for n in read_json_names(path) if ALLOWED.fullmatch(n)}
 
     # Protection 1: the game's own answers.
     answers: set[str] = set()
@@ -99,17 +137,23 @@ def main() -> None:
     else:
         print("warning: no --goethe given, so A1/A2 words that are also names may be excluded")
 
-    # Protection 3: strings that also exist as a lowercase word (verb/adjective/adverb).
+    # Protections 3 and 4 both need the word list. Every length is loaded, not just
+    # 3-8: an inflected form is usually longer than its lemma.
     lowercase_words: set[str] = set()
+    all_forms: set[str] = set()
     with args.list.open(encoding="utf-8") as handle:
         for line in handle:
             word = line.strip()
-            if word[:1].islower():
-                lowered = normalise(word)
-                if ALLOWED.fullmatch(lowered):
-                    lowercase_words.add(lowered)
+            if not word:
+                continue
+            lowered = normalise(word)
+            all_forms.add(lowered)
+            if word[:1].islower() and ALLOWED.fullmatch(lowered):
+                lowercase_words.add(lowered)
 
-    protected = (answers | goethe | lowercase_words) & names
+    by_rule_123 = (answers | goethe | lowercase_words) & names
+    by_noun_family = {n for n in names - by_rule_123 if has_noun_family(n, all_forms)}
+    protected = by_rule_123 | by_noun_family
     excluded = sorted(names - protected)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -119,8 +163,10 @@ def main() -> None:
     print(f"  {len(protected)} protected as real words, NOT excluded:")
     print(f"    answers:      {', '.join(sorted(names & answers)) or '—'}")
     print(f"    Goethe A1/A2: {', '.join(sorted((names & goethe) - answers)) or '—'}")
-    others = sorted(protected - answers - goethe)
-    print(f"    lowercase too: {', '.join(others[:24])}{' …' if len(others) > 24 else ''}")
+    others = sorted(by_rule_123 - answers - goethe)
+    print(f"    lowercase too: {', '.join(others[:20])}{' …' if len(others) > 20 else ''}")
+    family = sorted(by_noun_family)
+    print(f"    noun inflections ({len(family)}): {', '.join(family[:20])}{' …' if len(family) > 20 else ''}")
     print(f"  {len(excluded)} excluded -> {args.out}")
 
 

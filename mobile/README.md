@@ -127,7 +127,7 @@ repository root and maps three aliases:
 | `@store/*` | `../src/store/*` | The persisted shape, migrations and the stats rules |
 | `@data/*` | `../src/data/*` | The generated word bundles and guess dictionaries |
 
-So a fix to the tile algorithm or a new word fixes both apps, and the 92 unit tests
+So a fix to the tile algorithm or a new word fixes both apps, and the 107 unit tests
 at the repository root cover this app's game logic too.
 
 Two Metro details worth knowing, both learned the hard way:
@@ -177,7 +177,7 @@ Run here, all passing:
   which is now a dependency
 - `npx expo-doctor` — 19 of 21 checks pass. The two failures are the sandbox's proxy
   blocking `api.expo.dev` and the React Native Directory, not project problems
-- `npm test` at the repository root — 92 unit tests, which are this app's game logic
+- `npm test` at the repository root — 107 unit tests, which are this app's game logic
 
 **Not verified, because the Android SDK cannot be installed here:** `gradlew
 assembleRelease`, the APK, and anything about how it looks or feels on a real device.

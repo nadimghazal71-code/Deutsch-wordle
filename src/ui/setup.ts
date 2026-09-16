@@ -6,6 +6,7 @@ export interface SetupHandlers {
   onChoose: (length: Length) => void;
   onMode: (mode: 'daily' | 'practice') => void;
   onStart: () => void;
+  onWordList: () => void;
 }
 
 /**
@@ -56,6 +57,13 @@ export function renderSetup(
   ]);
   start.addEventListener('click', handlers.onStart);
 
+  const wordListButton = el('button', {
+    class: 'secondary-button',
+    type: 'button',
+    'aria-label': 'Wortliste ansehen — alle Wörter mit Bedeutung',
+  }, ['📖  Wortliste ansehen']);
+  wordListButton.addEventListener('click', handlers.onWordList);
+
   const smallPool = selected !== null && poolSizes[selected] < 40
     ? el('p', {
         class: 'small-pool',
@@ -74,6 +82,7 @@ export function renderSetup(
       modeButton('practice', 'Üben', 'so oft du willst'),
     ]),
     start,
+    wordListButton,
     el('p', { class: 'hint' }, [
       'Tipp: ', el('kbd', { text: ';u' }), ' wird zu ü — oder tippe auf Ä Ö Ü ß.',
     ]),

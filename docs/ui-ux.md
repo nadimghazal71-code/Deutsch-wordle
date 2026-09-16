@@ -103,6 +103,16 @@ right-aligned — reachable but out of the way of typing. One tap asks
 *„Wirklich aufgeben?"*, the second reveals the word. Rules in
 [game-design.md § 8a](game-design.md#8a-giving-up).
 
+## 3c. The word list
+
+`📖 Wortliste ansehen` sits under the start button on the setup screen. It opens a
+searchable, filterable list of every answer; tapping one shows its full entry. Rules
+and rationale in [game-design.md § 12](game-design.md#12-the-word-list--the-answer-key-browsable).
+
+The search field takes focus when the list opens, since searching is the common case
+at 347 entries. `Esc` (web) and the back gesture (Android) step from an entry back to
+the list, and from the list back to the menu.
+
 ## 4. The definition card
 
 The payoff. Layout and required content are specified in

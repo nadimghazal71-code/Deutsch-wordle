@@ -4,12 +4,14 @@ import { renderGrid, describeGuess } from './ui/grid.js';
 import { renderKeyboard, renderGiveUp } from './ui/keyboard.js';
 import { renderDefinitionCard } from './ui/definition-card.js';
 import { renderStats, renderSettings } from './ui/stats.js';
+import { renderWordList } from './ui/wordlist.js';
 import { keyboardState } from './core/keyboard-state.js';
 import { reduce, initialState, shareText, isRoundOver, type GameState } from './core/game.js';
 import { letters, toComparable, isDeadKey, isGermanLetter } from './core/normalise.js';
 import { answersOfLength, dailyAnswer, practiceAnswer, isoDate } from './core/select.js';
 import { hasWord, type Dictionary } from './core/dictionary.js';
 import { LENGTHS, isLength, type Length, type Word } from './core/types.js';
+import type { VocabularyFilter, VocabularyFilterPatch } from './core/vocabulary.js';
 import { load, save, recordResult, statsFor, type Settings, type Store } from './store/persist.js';
 
 import words3 from './data/words.3.json';
@@ -53,7 +55,7 @@ const POOL_SIZES = Object.fromEntries(
 ) as Record<Length, number>;
 const BY_ID = new Map(WORDS.map((w) => [w.id, w]));
 
-type Overlay = 'none' | 'reveal' | 'stats' | 'settings';
+type Overlay = 'none' | 'reveal' | 'stats' | 'settings' | 'words';
 
 interface AppState {
   store: Store;
@@ -64,6 +66,9 @@ interface AppState {
   toast: string | null;
   /** True once the player has clicked Aufgeben once and is being asked to confirm. */
   confirmingGiveUp: boolean;
+  /** State of the word-list browser. */
+  vocabFilter: VocabularyFilter;
+  vocabSelected: Word | null;
 }
 
 const app: AppState = {
@@ -74,6 +79,8 @@ const app: AppState = {
   overlay: 'none',
   toast: null,
   confirmingGiveUp: false,
+  vocabFilter: {},
+  vocabSelected: null,
 };
 
 const root = document.getElementById('app')!;
@@ -294,6 +301,7 @@ function render(): void {
       },
       onMode: (mode) => { app.mode = mode; render(); },
       onStart: () => { if (app.selectedLength !== null) void startRound(app.selectedLength, app.mode); },
+      onWordList: () => { app.overlay = 'words'; render(); },
     }));
   } else {
     root.append(el('div', { class: 'board-area' }, [renderGrid(app.game)]));
@@ -332,6 +340,19 @@ function render(): void {
     root.append(renderStats(app.store, length, () => {
       app.overlay = isRoundOver(app.game) ? 'reveal' : 'none';
       render();
+    }));
+  } else if (app.overlay === 'words') {
+    root.append(renderWordList(WORDS, app.vocabFilter, app.vocabSelected, {
+      onFilter: (patch: VocabularyFilterPatch) => {
+        const next: VocabularyFilter = { ...app.vocabFilter };
+        if ('query' in patch) { if (patch.query) next.query = patch.query; else delete next.query; }
+        if ('length' in patch) { if (patch.length) next.length = patch.length; else delete next.length; }
+        if ('level' in patch) { if (patch.level) next.level = patch.level; else delete next.level; }
+        app.vocabFilter = next;
+        render();
+      },
+      onSelect: (word) => { app.vocabSelected = word; render(); },
+      onClose: () => { app.vocabSelected = null; app.overlay = 'none'; render(); },
     }));
   } else if (app.overlay === 'settings') {
     root.append(renderSettings(app.store.settings, {
@@ -372,6 +393,8 @@ window.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape') {
     if (app.overlay !== 'none') {
+      if (app.overlay === 'words' && app.vocabSelected) { app.vocabSelected = null; render(); return; }
+      app.vocabSelected = null;
       app.overlay = app.overlay === 'reveal' ? 'none' : (isRoundOver(app.game) ? 'reveal' : 'none');
       if (app.overlay === 'none' && isRoundOver(app.game)) app.game = reduce(app.game, { type: 'RESET' });
       render();
