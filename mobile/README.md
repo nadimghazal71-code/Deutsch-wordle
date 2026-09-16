@@ -13,6 +13,23 @@ root, so there is one implementation of the rules and one word list.
 
 ## Build the APK
 
+### Windows first: let npm run
+
+PowerShell blocks npm by default — `npm.ps1 cannot be loaded because running scripts
+is disabled on this system`. It is PowerShell's execution policy, not a project
+problem. Pick one:
+
+```powershell
+# One-time, persistent, and Microsoft's recommended setting for a dev machine:
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+# Or, without changing any policy, call the batch shims instead:
+npm.cmd install
+npx.cmd expo start
+```
+
+Plain `cmd.exe` and Git Bash are unaffected — the block is PowerShell-specific.
+
 ### Prerequisites
 
 | Need | Notes |
@@ -29,6 +46,11 @@ cd mobile
 npm install
 npm run apk          # expo prebuild + gradlew assembleRelease
 ```
+
+`npm run apk` works on Windows, macOS and Linux: the Gradle step goes through
+[scripts/gradle.mjs](scripts/gradle.mjs), which picks `gradlew.bat` or `./gradlew`
+for the platform. (A bare `./gradlew` in an npm script fails on Windows, where npm
+runs scripts through `cmd.exe`.)
 
 The APK lands at:
 
@@ -72,14 +94,25 @@ an APK rather than an AAB. `production` builds an app-bundle for the Play Store.
 > The local Gradle path above has no such question mark, which is why it is listed
 > first.
 
-### Run it without building an APK
+### Run it on a phone without building an APK
 
 ```bash
 npm start            # then scan the QR code with Expo Go
 ```
 
-`expo-clipboard` and AsyncStorage both work in Expo Go, so the whole game is
-playable that way.
+Install **Expo Go** from the Play Store and scan the QR code. Phone and computer must
+be on the same Wi-Fi; if it will not connect, use `npx expo start --tunnel`.
+
+All five native dependencies (AsyncStorage, safe-area-context, clipboard, status-bar,
+system-ui) are in Expo Go's bundled module set, so the whole game is playable this way
+with no build and no Android SDK. You do **not** need `npm install` at the repository
+root either — the shared code this app imports from `src/` is plain TypeScript and
+JSON with no dependencies of its own.
+
+What Expo Go proves: the layout on a real screen, the 30-key keyboard, AsyncStorage
+persistence, Android's edge-to-edge insets, the definition card, dark mode, and guess
+rejection. What it cannot prove: the Gradle build, the launcher icon and the splash
+screen. So iterate in Expo Go, then do one APK build to check the packaging.
 
 ---
 

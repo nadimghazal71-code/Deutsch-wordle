@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit",
     "bundle:android": "expo export --platform android --output-dir .expo-export",
     "prebuild": "expo prebuild --platform android --clean",
-    "apk": "expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
-    "apk:arm64": "expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a",
+    "apk": "expo prebuild --platform android --clean && node scripts/gradle.mjs assembleRelease",
+    "apk:arm64": "expo prebuild --platform android --clean && node scripts/gradle.mjs assembleRelease -PreactNativeArchitectures=arm64-v8a",
     "apk:cloud": "eas build --platform android --profile preview"
   },
   "dependencies": {

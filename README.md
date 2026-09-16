@@ -80,8 +80,13 @@ npx tsx tests/e2e/narrow.ts    # 8-letter grid at 320px, checks for overflow
 ### Android app
 
 ```bash
-cd mobile && npm install && npm run apk
+cd mobile && npm install && npm start   # play it on a phone via Expo Go, no build
+cd mobile && npm install && npm run apk # or build the APK
 ```
+
+On Windows, PowerShell blocks npm until you either run
+`Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` or call
+`npm.cmd` instead of `npm`.
 
 Expo SDK 57. It imports the game logic and the word list from this repository rather
 than copying them, so a rules fix or a new word fixes both apps. Prerequisites, the
