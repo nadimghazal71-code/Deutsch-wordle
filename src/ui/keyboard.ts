@@ -49,6 +49,20 @@ export function renderKeyboard(states: Map<string, KeyState>, handlers: Keyboard
   return el('div', { class: 'keyboard', role: 'group', 'aria-label': 'Tastatur' }, rows);
 }
 
+/**
+ * Give up and see the word. Two clicks rather than one: losing a round you were still
+ * thinking about because of a mis-click would be worse than the extra click.
+ */
+export function renderGiveUp(confirming: boolean, onPress: () => void): HTMLElement {
+  const button = el('button', {
+    class: confirming ? 'give-up confirming' : 'give-up',
+    type: 'button',
+    'aria-label': confirming ? 'Wirklich aufgeben und das Wort zeigen' : 'Aufgeben',
+  }, [confirming ? 'Wirklich aufgeben?' : 'Aufgeben']);
+  button.addEventListener('click', onPress);
+  return el('div', { class: 'give-up-row' }, [button]);
+}
+
 function ariaLabel(key: string, state: KeyState | undefined): string {
   const suffix =
     state === 'correct' ? ', richtig' :

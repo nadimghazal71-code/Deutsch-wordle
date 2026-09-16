@@ -52,7 +52,7 @@ export function renderSetup(
   }, [
     selected !== null && mode === 'daily' && dailyDone(selected)
       ? 'Heute schon gespielt'
-      : 'Spielen',
+      : 'Starten',
   ]);
   start.addEventListener('click', handlers.onStart);
 

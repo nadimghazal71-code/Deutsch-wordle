@@ -83,6 +83,26 @@ the dead key and the on-screen `Ä Ö Ü ß` keys, which is why this is document
 than worked around. Closing it properly means a focused offscreen editable element
 listening to `beforeinput`, which costs more in accessibility than it buys.
 
+## 3a. The start button, and a bug worth remembering
+
+The primary button says **`Starten`** and spans the full width of the setup screen,
+with a floor of 52px on its height — comfortably past the 48dp tap-target guideline.
+
+That floor exists because of a real bug. On Android the button was styled
+`flex: 1` so it would fill the definition card's action row. In React Native `flex: 1`
+also sets `flexBasis: 0`, so in the setup screen's **column** parent the button's
+height collapsed to zero: a thin blue sliver with the label clipped out of sight.
+Growing to fill a row is now an explicit `fill` prop used only inside
+`flexDirection: 'row'` containers, and the `minHeight` makes the failure impossible to
+reintroduce silently.
+
+## 3b. Giving up
+
+A small underlined `Aufgeben` control sits between the board and the keyboard,
+right-aligned — reachable but out of the way of typing. One tap asks
+*„Wirklich aufgeben?"*, the second reveals the word. Rules in
+[game-design.md § 8a](game-design.md#8a-giving-up).
+
 ## 4. The definition card
 
 The payoff. Layout and required content are specified in

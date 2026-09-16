@@ -44,10 +44,14 @@ card, the keyboard colouring, the dead key, and that `ss` stays `ss`.
       [game-design.md § 2](game-design.md#the-3-letter-problem--a-real-constraint-not-a-rounding-error)
       are in (pool size shown per length, a `Kleiner Wortschatz` note, no-repeat cycling)
 - [ ] **Curate the remaining 531 eligible answers** — the largest open task
-- [x] All three validation tiers in settings, with a real **98,000-form German guess
+- [x] All three validation tiers in settings, with a real **97,000-form German guess
       dictionary** behind `dictionary`, which is now the default: a guess has to be a
       word ([word-list.md § 4](word-list.md#4-the-guess-dictionary))
+- [x] Given names rejected as guesses, with real words that are also names protected
+      ([word-list.md § 4](word-list.md#given-names-are-excluded-carefully))
+- [x] `Aufgeben` — give up and see the word, as a two-tap confirm
 - [ ] Confirm the guess list's licence and add attribution before distributing
+- [ ] A frequency list, to cut place names and the word list's own oddities in one pass
 - [x] Daily mode: seeded permutation selection, local midnight reset, one puzzle per length
 - [x] Per-length stats, streaks, guess distribution, words-seen
 - [x] localStorage persistence with `schema` versioning and mid-round resume

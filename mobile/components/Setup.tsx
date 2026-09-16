@@ -66,7 +66,7 @@ export function Setup({ poolSizes, selected, mode, dailyDone, theme, onChoose, o
 
       <View style={{ opacity: selected === null || blocked ? 0.5 : 1 }}>
         <Button
-          label={blocked ? 'Heute schon gespielt' : 'Spielen'}
+          label={blocked ? 'Heute schon gespielt' : 'Starten'}
           theme={theme}
           primary
           onPress={() => {

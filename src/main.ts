@@ -1,7 +1,7 @@
 import { el, clear, announce } from './ui/dom.js';
 import { renderSetup } from './ui/setup.js';
 import { renderGrid, describeGuess } from './ui/grid.js';
-import { renderKeyboard } from './ui/keyboard.js';
+import { renderKeyboard, renderGiveUp } from './ui/keyboard.js';
 import { renderDefinitionCard } from './ui/definition-card.js';
 import { renderStats, renderSettings } from './ui/stats.js';
 import { keyboardState } from './core/keyboard-state.js';
@@ -62,6 +62,8 @@ interface AppState {
   mode: 'daily' | 'practice';
   overlay: Overlay;
   toast: string | null;
+  /** True once the player has clicked Aufgeben once and is being asked to confirm. */
+  confirmingGiveUp: boolean;
 }
 
 const app: AppState = {
@@ -71,6 +73,7 @@ const app: AppState = {
   mode: 'practice',
   overlay: 'none',
   toast: null,
+  confirmingGiveUp: false,
 };
 
 const root = document.getElementById('app')!;
@@ -139,6 +142,25 @@ function isKnownWord(word: string): boolean {
   return hasWord(dictionary, word);
 }
 
+let giveUpTimer: number | undefined;
+
+/** First click asks, second click gives up. The question lapses after a few seconds. */
+function giveUp(): void {
+  if (!app.confirmingGiveUp) {
+    app.confirmingGiveUp = true;
+    announce('Noch einmal klicken, um aufzugeben.');
+    window.clearTimeout(giveUpTimer);
+    giveUpTimer = window.setTimeout(() => { app.confirmingGiveUp = false; render(); }, 4000);
+    render();
+    return;
+  }
+  window.clearTimeout(giveUpTimer);
+  app.confirmingGiveUp = false;
+  app.game = reduce(app.game, { type: 'GIVE_UP' });
+  finishRound(app.game);
+  render();
+}
+
 function finishRound(game: GameState): void {
   const won = game.status === 'won';
   app.store = recordResult(app.store, game.length, {
@@ -158,8 +180,10 @@ function finishRound(game: GameState): void {
       : app.store.dailyDone,
   };
   save(app.store);
-  // Let the last row finish flipping before the card covers it.
-  window.setTimeout(() => { app.overlay = 'reveal'; render(); }, game.length * 60 + 260);
+  // Let the last row finish flipping before the card covers it. Giving up with an
+  // empty grid has nothing to flip, so it reveals at once.
+  const delay = game.guesses.length === 0 ? 0 : game.length * 60 + 260;
+  window.setTimeout(() => { app.overlay = 'reveal'; render(); }, delay);
 }
 
 function isDailyDone(length: Length): boolean {
@@ -273,10 +297,19 @@ function render(): void {
     }));
   } else {
     root.append(el('div', { class: 'board-area' }, [renderGrid(app.game)]));
+    if (app.game.status === 'playing') root.append(renderGiveUp(app.confirmingGiveUp, giveUp));
     root.append(renderKeyboard(keyboardState(app.game.guesses), {
-      onLetter: (letter) => { app.game = reduce(app.game, { type: 'TYPE_LETTER', letter }); render(); },
+      onLetter: (letter) => {
+        app.confirmingGiveUp = false;
+        app.game = reduce(app.game, { type: 'TYPE_LETTER', letter });
+        render();
+      },
       onEnter: submit,
-      onBackspace: () => { app.game = reduce(app.game, { type: 'BACKSPACE' }); render(); },
+      onBackspace: () => {
+        app.confirmingGiveUp = false;
+        app.game = reduce(app.game, { type: 'BACKSPACE' });
+        render();
+      },
     }));
   }
 
@@ -314,6 +347,7 @@ function header(): HTMLElement {
   const home = el('button', { class: 'icon-button', type: 'button', 'aria-label': 'Zurück zur Auswahl' }, ['←']);
   home.addEventListener('click', () => {
     app.game = reduce(app.game, { type: 'RESET' });
+    app.confirmingGiveUp = false;
     app.overlay = 'none';
     render();
   });
@@ -349,6 +383,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') { event.preventDefault(); submit(); return; }
   if (event.key === 'Backspace') { event.preventDefault(); app.game = reduce(app.game, { type: 'BACKSPACE' }); render(); return; }
   if (isDeadKey(event.key)) { event.preventDefault(); app.game = reduce(app.game, { type: 'DEAD_KEY' }); render(); return; }
+  app.confirmingGiveUp = false;
 
   const key = event.key.toLowerCase();
   if (letters(key).length === 1 && isGermanLetter(key)) {

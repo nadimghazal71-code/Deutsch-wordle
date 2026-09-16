@@ -135,6 +135,51 @@ describe('game reducer', () => {
   });
 });
 
+describe('giving up', () => {
+  it('ends the round as a loss, so the card still shows the word', () => {
+    const s = reduce(type(start('tasse'), 'ess'), { type: 'GIVE_UP' });
+    expect(s.status).toBe('lost');
+  });
+
+  it('clears the half-typed row', () => {
+    const s = reduce(type(start('tasse'), 'ess'), { type: 'GIVE_UP' });
+    expect(s.current).toEqual([]);
+  });
+
+  it('keeps the guesses already made, so the grid and stats stay honest', () => {
+    let s = submit(type(start('tasse'), 'essen'));
+    s = reduce(s, { type: 'GIVE_UP' });
+    expect(s.guesses).toHaveLength(1);
+    expect(s.status).toBe('lost');
+  });
+
+  it('works before any guess at all', () => {
+    const s = reduce(start('tasse'), { type: 'GIVE_UP' });
+    expect(s.status).toBe('lost');
+    expect(s.guesses).toHaveLength(0);
+  });
+
+  it('does nothing once the round is already over', () => {
+    const won = submit(type(start('tasse'), 'tasse'));
+    expect(reduce(won, { type: 'GIVE_UP' }).status).toBe('won');
+  });
+
+  it('does nothing on the setup screen', () => {
+    expect(reduce(initialState(), { type: 'GIVE_UP' }).status).toBe('setup');
+  });
+
+  it('accepts no further input afterwards', () => {
+    const s = reduce(start('tasse'), { type: 'GIVE_UP' });
+    expect(type(s, 'tasse').current).toEqual([]);
+    expect(submit(s).guesses).toHaveLength(0);
+  });
+
+  it('reports as a loss when shared', () => {
+    const s = reduce(submit(type(start('tasse'), 'essen')), { type: 'GIVE_UP' });
+    expect(shareText(s, '16.09.2026')).toContain('X/6');
+  });
+});
+
 describe('shareText', () => {
   it('contains the grid and the score but never the answer', () => {
     let s = start('tasse');

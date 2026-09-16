@@ -229,7 +229,7 @@ that makes a Wordle clone feel wrong:
 | Source | A full German word list, ~1.9M inflected forms, supplied for this project |
 | Committed | `data/dictionary/<n>.txt` — filtered, lowercased, NFC, sorted, one word per line (~800 KB) |
 | Generated | `src/data/guesses.<n>.json` by `npm run build:words` |
-| Total accepted | **98,035 forms** at 3–8 letters |
+| Total accepted | **97,391 forms** at 3–8 letters (98,035 from the list, minus 644 given names) |
 
 | Length | 3 | 4 | 5 | 6 | 7 | 8 |
 | --- | --: | --: | --: | --: | --: | --: |
@@ -248,6 +248,42 @@ compounds like `Weltkriegszusammenhanges`) and the 290 forms containing characte
 outside the game's alphabet (`café`, `crêpe`, `façon`) — those could never be typed on
 a 30-key German keyboard anyway.
 
+### Given names are excluded, carefully
+
+A full German word list contains first names — `Albin`, `Bernd`, `Helmut` — and
+because **German capitalises every noun there is no structural way to tell `Albin`
+from `Haus`**. Both appear only capitalised; both lowercase to a plausible word. So
+the names have to be listed explicitly.
+
+| | |
+| --- | --- |
+| Sources | A supplied list of ~2,000 historical German first names, plus `data/dictionary/names-common.txt` for the modern ones it omits (Jürgen, Michael, Thomas, Anna) |
+| Committed | `data/dictionary/excluded-names.txt` — 2,210 names |
+| Actually removed | **644** (the rest, like `adalbald`, were never in the word list) |
+
+The danger is that **many German first names are also ordinary words**, so blind
+removal would reject real German. `scripts/import_names.py` therefore protects a name
+when any of three things is true, and prints what it protected:
+
+1. **It is a curated answer.** Seven are: `alt`, `ecke`, `gast`, `ort`, `rot`, `wald`,
+   `wolke`. Removing one of these would show a player a valid answer being refused,
+   with no way to win — the worst outcome in the whole project.
+2. **It is a Goethe A1/A2 lemma** — the vocabulary the app teaches: `land`, `bald`,
+   `dank`, `frei`, `hart`, `rein`.
+3. **It also exists in lowercase in the word list**, meaning a verb, adjective or
+   adverb of the same spelling exists: `kraft`, `linde`, `ernst`, `frank`, `rosa`,
+   `max`, `traut`.
+
+Two more needed a human, because they pass none of those rules and are still words:
+**`Kai`** (a quay) and **`Jasmin`** (the shrub). They are commented out of
+`names-common.txt` rather than silently dropped. `tests/dictionary.test.ts` pins all
+of these, so a future name list cannot quietly break them.
+
+What this does **not** fix: place names (`aachen`, `berlin`), names outside the
+supplied lists (`aaron`), and general oddities the word list carries anyway
+(`bauzeugs`, `nottank`). A frequency list would deal with all three at once and is the
+better long-term answer; see § 4 above.
+
 ### The storage format, and why it is a single string
 
 Every word in a bundle has exactly `n` letters, so no separators are needed. Each
@@ -260,7 +296,7 @@ bundle is one sorted, concatenated string plus a count:
 `core/dictionary.ts` binary-searches it by slicing at `index * n`. This is not
 premature cleverness; it buys three things that matter:
 
-1. **No startup allocation.** A `Set` of 98,000 strings would be built on every launch.
+1. **No startup allocation.** A `Set` of 97,000 strings would be built on every launch.
    This is six string constants, and on mobile they land in the Hermes bytecode.
 2. **A quarter less space.** A JSON array of 48,470 eight-letter words spends three
    characters per word on quotes and commas; concatenation spends none.

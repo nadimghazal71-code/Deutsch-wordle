@@ -29,6 +29,7 @@ export type Action =
   | { type: 'DEAD_KEY' }
   | { type: 'BACKSPACE' }
   | { type: 'SUBMIT'; isKnownWord: (word: string) => boolean; tier: ValidationTier }
+  | { type: 'GIVE_UP' }
   | { type: 'RESET' };
 
 export function initialState(): GameState {
@@ -113,6 +114,13 @@ export function reduce(state: GameState, action: Action): GameState {
       const status: GameStatus = won ? 'won' : guesses.length >= state.maxAttempts ? 'lost' : 'playing';
 
       return { ...state, guesses, current: [], status, rejection: null, deadKey: false };
+    }
+
+    case 'GIVE_UP': {
+      // Counts as a loss, which is the honest outcome: the definition card then shows
+      // the word, so the round still teaches something.
+      if (state.status !== 'playing') return state;
+      return { ...state, status: 'lost', current: [], rejection: null, deadKey: false };
     }
 
     case 'RESET':

@@ -90,6 +90,31 @@ describe('the guess dictionary', () => {
     expect(hasWord(DICTS[4], 'grun')).toBe(false);
   });
 
+  it('rejects German first names', () => {
+    // German capitalises every noun, so a word list cannot tell 'Albin' from 'Haus';
+    // the names are excluded explicitly. See scripts/import_names.py.
+    for (const name of ['albin', 'bernd', 'helmut', 'sigrid', 'detlef', 'gisela',
+                        'jürgen', 'michael', 'thomas', 'andreas', 'klaus', 'peter',
+                        'anna', 'maria', 'julia', 'sabine']) {
+      const n = letters(name).length as Length;
+      if (DICTS[n]) expect(hasWord(DICTS[n], name), name).toBe(false);
+    }
+  });
+
+  it('still accepts the real words that happen to also be names', () => {
+    // These are the collisions that make blind name-removal dangerous: seven of them
+    // are answers this game can set, and rejecting one would be unwinnable.
+    for (const word of ['rot', 'alt', 'ort', 'ecke', 'gast', 'wald', 'wolke',
+                        'land', 'bald', 'dank', 'frei', 'hart', 'rein',
+                        'kraft', 'linde', 'ernst', 'frank',
+                        // Also names, but der Kai is a quay, der Jasmin a shrub,
+                        // and rosa is a colour.
+                        'kai', 'jasmin', 'rosa']) {
+      const n = letters(word).length as Length;
+      expect(hasWord(DICTS[n], word), word).toBe(true);
+    }
+  });
+
   it('is big enough to be worth calling a dictionary', () => {
     const total = LENGTHS.reduce((sum, n) => sum + DICTS[n].count, 0);
     expect(total).toBeGreaterThan(50_000);

@@ -41,10 +41,15 @@ const poolLabels = await page.locator('.length-option .pool').allTextContents();
 check('all six lengths offered with pool sizes', poolLabels.length === 6, poolLabels.join(' '));
 await page.screenshot({ path: `${SHOTS}/1-setup.png` });
 
-// ── start a daily round at length 5 ──
+// ── the start button: labelled, and tall enough to read ──
 await page.getByRole('button', { name: /^5 Buchstaben/ }).click();
 await page.getByRole('button', { name: 'Täglich' }).click();
-await page.getByRole('button', { name: 'Spielen' }).click();
+const startButton = page.locator('.setup .primary');
+check('the start button says Starten', (await startButton.textContent()) === 'Starten');
+const startBox = await startButton.boundingBox();
+check('the start button is a usable size', (startBox?.height ?? 0) >= 44 && (startBox?.width ?? 0) > 200,
+  `${Math.round(startBox?.width ?? 0)}x${Math.round(startBox?.height ?? 0)}`);
+await startButton.click();
 
 const tiles = page.locator('.tile');
 check('grid has attempts × length tiles', await tiles.count() === 6 * LENGTH, `${await tiles.count()} tiles`);
@@ -71,6 +76,14 @@ check('a non-word is rejected', await page.locator('.tile[data-mark]').count() =
 check('the rejection is announced', ((await page.locator('.toast').textContent()) ?? '').includes('kenne ich nicht'));
 check('the rejected guess keeps its letters for editing',
   (await page.locator('.row').nth(1).locator('.tile').allTextContents()).join('') === 'XXXXX');
+for (let i = 0; i < LENGTH; i++) await page.keyboard.press('Backspace');
+
+// ── a German first name must be rejected ──
+await page.keyboard.type('bernd');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(250);
+check('a German first name is rejected', await page.locator('.tile[data-mark]').count() === LENGTH,
+  'Bernd is a name, not a word');
 for (let i = 0; i < LENGTH; i++) await page.keyboard.press('Backspace');
 
 // ── a real German word that is not an answer must be accepted ──
@@ -125,6 +138,30 @@ await page.getByRole('button', { name: /^5 Buchstaben/ }).click();
 await page.getByRole('button', { name: 'Täglich' }).click();
 const startLabel = await page.locator('.setup .primary').textContent();
 check('daily round is blocked after playing', startLabel === 'Heute schon gespielt', startLabel ?? '');
+
+// ── giving up reveals the word, and takes two clicks ──
+await page.locator('.length-option').first().click();          // 3 letters
+await page.locator('.mode-option', { hasText: 'Üben' }).click();
+await page.locator('.setup .primary').click();
+await page.waitForSelector('.give-up');
+check('the give-up control is offered during a round', await page.locator('.give-up').count() === 1);
+await page.locator('.give-up').click();
+check('one click only asks for confirmation',
+  ((await page.locator('.give-up').textContent()) ?? '').includes('Wirklich'));
+check('one click does not end the round', await page.locator('.card-backdrop').count() === 0);
+await page.locator('.give-up').click();
+await page.waitForSelector('.card-backdrop', { timeout: 4000 });
+const givenUpCard = page.locator('.card');
+check('giving up reveals the word', ((await givenUpCard.locator('.result').textContent()) ?? '').includes('Das Wort war'));
+check('the revealed word has a definition',
+  ((await givenUpCard.locator('.definition').textContent()) ?? '').length > 10);
+await page.screenshot({ path: `${SHOTS}/8-gave-up.png` });
+await givenUpCard.getByRole('button', { name: 'Statistik' }).click();
+await page.waitForSelector('[aria-label="Statistik"]');
+check('giving up counts as a played round', ((await page.locator('.stats-figures').textContent()) ?? '').includes('1'));
+await page.getByRole('button', { name: 'Schließen' }).click();
+await page.locator('.card-backdrop').first().click({ position: { x: 5, y: 5 } });
+await page.waitForSelector('.setup');
 
 // ── colour-blind palette + glyphs ──
 await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();

@@ -25,6 +25,35 @@ interface Props {
   onBackspace: () => void;
 }
 
+interface GiveUpProps {
+  theme: Theme;
+  /** True once the player has tapped once and is being asked to confirm. */
+  confirming: boolean;
+  onPress: () => void;
+}
+
+/**
+ * Give up and see the word. Two taps rather than one: losing a round you were still
+ * thinking about because of a mis-tap would be worse than the extra tap.
+ */
+export function GiveUpRow({ theme, confirming, onPress }: GiveUpProps) {
+  return (
+    <View style={styles.giveUpRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={confirming ? 'Wirklich aufgeben und das Wort zeigen' : 'Aufgeben'}
+        onPress={onPress}
+        hitSlop={8}
+        style={({ pressed }) => [styles.giveUp, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <Text style={[styles.giveUpLabel, { color: confirming ? theme.present : theme.textDim }]}>
+          {confirming ? 'Wirklich aufgeben?' : 'Aufgeben'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export function Keyboard({ states, theme, onLetter, onEnter, onBackspace }: Props) {
   return (
     <View accessibilityLabel="Tastatur" style={styles.keyboard}>
@@ -108,6 +137,9 @@ function ariaLabel(key: string, state: KeyState | undefined): string {
 }
 
 const styles = StyleSheet.create({
+  giveUpRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingBottom: 2 },
+  giveUp: { paddingVertical: 6, paddingHorizontal: 4 },
+  giveUpLabel: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
   keyboard: { gap: 6, paddingBottom: 4 },
   row: { flexDirection: 'row', gap: 4, justifyContent: 'center' },
   key: {

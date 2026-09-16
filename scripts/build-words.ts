@@ -14,6 +14,8 @@ import type { Word } from '../src/core/types.js';
 
 const DATA_DIR = 'data/words';
 const DICT_DIR = 'data/dictionary';
+/** Given names to reject as guesses — see scripts/import_names.py. */
+const EXCLUDED_NAMES_FILE = 'data/dictionary/excluded-names.txt';
 const OUT_DIR = 'src/data';
 /** Below this, a length does not have enough answers to be worth offering. */
 const MIN_POOL = 30;
@@ -122,7 +124,20 @@ function main(): void {
   // worst bug this project can ship, so the forms are added rather than assumed.
   //
   // Nothing here can become an answer. Answers come only from data/words/.
+  // German capitalises every noun, so a word list cannot distinguish 'Albin' from
+  // 'Haus' — the names have to be listed explicitly. scripts/import_names.py already
+  // protects real words that happen to be names (rot, wald, gast, kraft, linde), so
+  // this set is safe to subtract wholesale.
+  const excludedNames = new Set<string>();
+  if (existsSync(EXCLUDED_NAMES_FILE)) {
+    for (const line of readFileSync(EXCLUDED_NAMES_FILE, 'utf8').split('\n')) {
+      const name = line.trim();
+      if (name) excludedNames.add(name);
+    }
+  }
+
   let totalGuesses = 0;
+  let totalNamesRemoved = 0;
   for (const n of LENGTHS) {
     const accepted = new Set<string>();
 
@@ -139,6 +154,12 @@ function main(): void {
         continue;
       }
       accepted.add(word);
+    }
+
+    // Names come out before the curated forms go in, so that an answer which is also
+    // a name survives even if the exclusion list ever stops protecting it.
+    for (const name of excludedNames) {
+      if (accepted.delete(name)) totalNamesRemoved++;
     }
 
     for (const w of words) {
@@ -181,7 +202,11 @@ function main(): void {
   }
 
   const answers = words.filter((w) => w.answer);
-  console.log(`✓ ${words.length} entries valid — ${answers.length} answers, ${totalGuesses.toLocaleString()} accepted guesses\n`);
+  console.log(
+    `✓ ${words.length} entries valid — ${answers.length} answers, ` +
+    `${totalGuesses.toLocaleString()} accepted guesses ` +
+    `(${totalNamesRemoved.toLocaleString()} given names rejected)\n`,
+  );
   console.log('len | answers | A1 | A2 | nouns | verbs | other | with ä ö ü ß');
   console.log('----+---------+----+----+-------+-------+-------+-------------');
   for (const n of LENGTHS) {

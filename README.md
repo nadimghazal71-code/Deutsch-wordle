@@ -8,7 +8,7 @@ you something whether you win or lose.
 
 > **Status:** playable on the web, and there is an Android app on Expo SDK 57 that is
 > ready to build ([mobile/](mobile/README.md)). 347 curated answers across all six
-> lengths, a 98,000-form guess dictionary, 82 unit tests and an end-to-end browser
+> lengths, a 97,000-form guess dictionary, 92 unit tests and an end-to-end browser
 > run that plays a real round. The
 > documents in `docs/` are the spec; where building it changed a decision, the doc
 > says so and why.
@@ -25,7 +25,7 @@ and you learn nothing when the round ends. This game changes three things:
 | ~2,300 obscure answers | curated A1/A2 words you actually need (347 shipped, 878 eligible) |
 | Answer revealed, no context | Definition card: article, plural, meaning, example |
 | English alphabet | German alphabet incl. `Ä Ö Ü ß` |
-| Rejects non-words | Same — ~98,000 German forms, so a guess has to be a real word |
+| Rejects non-words | Same — ~97,000 German forms, so a guess has to be a real word |
 
 ## Documentation
 
@@ -45,14 +45,16 @@ and you learn nothing when the round ends. This game changes three things:
 1. **Setup screen.** Choose a word length, 3 to 8. The chooser shows how many words
    exist at each length so you know what you're in for.
 2. **Play.** Type a German word of that length — it has to be a real one, checked
-   against ~98,000 German forms. Tiles turn 🟩 correct place, 🟨 in the word but
+   against ~97,000 German forms. Tiles turn 🟩 correct place, 🟨 in the word but
    elsewhere, ⬜ not in the word. `Ä Ö Ü ß` are letters in their own right and have
    their own keys.
 3. **Attempts** scale with length: 5 for a 3–4 letter word, 6 for 5–6, 7 for 7–8.
 4. **Round ends** — won or lost — and the definition card appears: **die Tasse**,
    plural *Tassen*, "ein kleines Ding, aus dem man Kaffee oder Tee trinkt", plus an
    example sentence and the CEFR level.
-5. **Stats** are tracked per length, because a 3-letter streak and an 8-letter streak
+5. **Stuck?** `Aufgeben` (two taps, so you cannot do it by accident) ends the round
+   and shows you the word anyway — the card is the lesson either way.
+6. **Stats** are tracked per length, because a 3-letter streak and an 8-letter streak
    are not the same achievement.
 
 ## Quick start
@@ -61,7 +63,7 @@ and you learn nothing when the round ends. This game changes three things:
 npm install
 npm run build:words   # validate data/words/*.json and compile the shipped bundles
 npm run dev           # http://localhost:5173
-npm test              # 82 unit tests
+npm test              # 92 unit tests
 npm run build         # build:words + typecheck + production bundle
 ```
 
@@ -106,13 +108,17 @@ data/words/       the curated answers, one file per length
 data/dictionary/  the guess dictionary, one file per length (98k forms; guesses only)
 scripts/      import_goethe.py (PDF -> review queue), import_dictionary.py (word list
               -> per-length lists), build-words.ts (validate -> bundles)
-tests/        82 unit tests over src/core and src/store, plus two Chromium e2e runs
+tests/        92 unit tests over src/core and src/store, plus two Chromium e2e runs
 ```
 
 ## What is not done
 
+- **The name filter is only as complete as the lists behind it.** Given names are
+  rejected (644 of them), but place names (`berlin`), names outside the supplied lists
+  (`aaron`) and the word list's own oddities (`bauzeugs`) still pass. A frequency list
+  would fix all three — see [docs/word-list.md § 4](docs/word-list.md#4-the-guess-dictionary).
 - **The guess dictionary's licence is unconfirmed.** Validation itself is done:
-  ~98,000 German forms, a non-word is rejected, and the default tier is `dictionary`.
+  ~97,000 German forms, a non-word is rejected, and the default tier is `dictionary`.
   But the word list was supplied rather than sourced, so confirm its licence and add
   attribution before distributing — see
   [docs/word-list.md § 4](docs/word-list.md#4-the-guess-dictionary).

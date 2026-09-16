@@ -66,7 +66,7 @@ export function StatsCard({ store, length, theme, onClose }: {
       </View>
 
       <View style={styles.actions}>
-        <Button label="Schließen" theme={theme} primary onPress={onClose} />
+        <Button label="Schließen" theme={theme} primary fill onPress={onClose} />
       </View>
     </Overlay>
   );
@@ -111,7 +111,7 @@ export function SettingsCard({ settings, theme, onChange, onClose }: {
       </Setting>
 
       <View style={styles.actions}>
-        <Button label="Schließen" theme={theme} primary onPress={onClose} />
+        <Button label="Schließen" theme={theme} primary fill onPress={onClose} />
       </View>
     </Overlay>
   );

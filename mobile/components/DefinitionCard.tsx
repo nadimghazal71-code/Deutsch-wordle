@@ -54,7 +54,7 @@ export function DefinitionCard({ word, outcome, theme, onPlayAgain, onStats, onS
       </View>
 
       <View style={styles.actions}>
-        <Button label="Nochmal spielen" onPress={onPlayAgain} theme={theme} primary />
+        <Button label="Nochmal spielen" onPress={onPlayAgain} theme={theme} primary fill />
         <Button label="📊" accessibilityLabel="Statistik" onPress={onStats} theme={theme} />
         <Button label="⤳" accessibilityLabel="Ergebnis kopieren" onPress={onShare} theme={theme} />
       </View>
@@ -105,10 +105,16 @@ interface ButtonProps {
   onPress: () => void;
   theme: Theme;
   primary?: boolean;
+  /**
+   * Grow to fill a row. Only for a `flexDirection: 'row'` parent — this used to be
+   * baked into `primary`, which silently collapsed the button to zero height in a
+   * column parent, because `flex: 1` also sets `flexBasis: 0`.
+   */
+  fill?: boolean;
   accessibilityLabel?: string;
 }
 
-export function Button({ label, onPress, theme, primary, accessibilityLabel }: ButtonProps) {
+export function Button({ label, onPress, theme, primary, fill, accessibilityLabel }: ButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -117,8 +123,9 @@ export function Button({ label, onPress, theme, primary, accessibilityLabel }: B
       style={({ pressed }) => [
         styles.button,
         primary
-          ? { backgroundColor: theme.accent, flex: 1 }
+          ? { backgroundColor: theme.accent }
           : { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+        fill ? styles.buttonFill : null,
         { opacity: pressed ? 0.75 : 1 },
       ]}
     >
@@ -156,6 +163,16 @@ const styles = StyleSheet.create({
   exampleDe: { fontSize: 15, fontStyle: 'italic', lineHeight: 22 },
   exampleEn: { fontSize: 13, marginTop: 3 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 20 },
-  button: { paddingVertical: 14, paddingHorizontal: 16, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // A floor on the height, so a stray flex rule can never collapse the label out of
+    // sight again, and the tap target clears the 48dp accessibility guideline.
+    minHeight: 52,
+  },
+  buttonFill: { flex: 1 },
   buttonLabel: { fontSize: 16, fontWeight: '600' },
 });

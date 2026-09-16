@@ -218,7 +218,7 @@ tiers, and the tier is a **setting** because the right answer differs by audienc
 | Tier | Accepts | For |
 | --- | --- | --- |
 | `strict` | Only words in the A1/A2 answer pool | Players who want the pool to be the dictionary |
-| `dictionary` *(default)* | Any real German word of the right length — ~98,000 forms, see [word-list.md § 4](word-list.md#4-the-guess-dictionary) | Everyone. Lets you spend a guess on `gehen` to probe letters, even though it is not a possible answer |
+| `dictionary` *(default)* | Any real German word of the right length — ~97,000 forms, see [word-list.md § 4](word-list.md#4-the-guess-dictionary) | Everyone. Lets you spend a guess on `gehen` to probe letters, even though it is not a possible answer |
 | `open` | Any sequence of German letters | Absolute beginners, and anyone who finds rejection discouraging |
 
 Rejected guesses do **not** consume an attempt. They shake the row and announce
@@ -315,6 +315,23 @@ to finish. When enabled in settings, one hint per round, never automatic:
 | Reveal a letter | Costs one attempt, and the round does not count toward the streak |
 
 ---
+
+## 8a. Giving up
+
+A player who is stuck must be able to see the word. `Aufgeben` ends the round as a
+**loss** and opens the definition card exactly as running out of attempts does —
+because the card is the lesson, and a player who quits should still learn the word.
+
+- It **takes two taps.** The first turns the label into *„Wirklich aufgeben?"*; the
+  second ends the round, and the question lapses after four seconds or as soon as the
+  player types anything. Losing a round you were still thinking about to a mis-tap
+  would be worse than the extra tap.
+- It **counts as a played round and breaks a daily streak**, like any other loss.
+  Anything else would make the streak meaningless.
+- The guesses already made stay on the grid, so the shared result is honest: it
+  reports `X/6`.
+- The rule lives in the reducer (`GIVE_UP`), not in either UI, so web and Android
+  behave identically.
 
 ## 9. Modes
 

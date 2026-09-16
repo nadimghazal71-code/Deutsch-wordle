@@ -322,6 +322,18 @@ button {
 .key[data-state='present'] { background: var(--present); }
 .key[data-state='absent'] { background: var(--absent); }
 
+.give-up-row { display: flex; justify-content: flex-end; }
+
+.give-up {
+  padding: 0.35rem 0.25rem;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.give-up:hover { color: var(--text); }
+.give-up.confirming { color: var(--present); }
+
 /* ─────────────────────────────── definition card ─────────────────────────────── */
 .card-backdrop {
   position: fixed;

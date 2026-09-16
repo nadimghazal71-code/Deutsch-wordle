@@ -18,7 +18,7 @@ import { freshStore, recordResult, statsFor, type Settings, type Store } from '@
 import { load, save } from './storage';
 import { makeTheme, type Theme } from './theme';
 import { Grid, describeGuess } from './components/Grid';
-import { Keyboard } from './components/Keyboard';
+import { GiveUpRow, Keyboard } from './components/Keyboard';
 import { DefinitionCard } from './components/DefinitionCard';
 import { SettingsCard, StatsCard } from './components/Overlays';
 import { Setup } from './components/Setup';
@@ -75,6 +75,8 @@ function Game() {
   const [selectedLength, setSelectedLength] = useState<Length>(5);
   const [mode, setMode] = useState<'daily' | 'practice'>('practice');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [confirmingGiveUp, setConfirmingGiveUp] = useState(false);
+  const giveUpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const settings = store.settings;
   const theme = useMemo(
@@ -106,7 +108,24 @@ function Game() {
     toastTimer.current = setTimeout(() => setToast(null), 1600);
   }, []);
 
-  useEffect(() => () => clearTimeout(toastTimer.current), []);
+  useEffect(() => () => {
+    clearTimeout(toastTimer.current);
+    clearTimeout(giveUpTimer.current);
+  }, []);
+
+  /** First tap asks, second tap gives up. The question lapses after a few seconds. */
+  const giveUp = useCallback(() => {
+    if (!confirmingGiveUp) {
+      setConfirmingGiveUp(true);
+      AccessibilityInfo.announceForAccessibility('Noch einmal tippen, um aufzugeben.');
+      clearTimeout(giveUpTimer.current);
+      giveUpTimer.current = setTimeout(() => setConfirmingGiveUp(false), 4000);
+      return;
+    }
+    clearTimeout(giveUpTimer.current);
+    setConfirmingGiveUp(false);
+    dispatch({ type: 'GIVE_UP' });
+  }, [confirmingGiveUp]);
 
   const isDailyDone = useCallback(
     (length: Length) => store.dailyDone[length] === isoDate(),
@@ -128,6 +147,8 @@ function Game() {
       mode: nextMode,
       date: today,
     });
+    finished.current = null;
+    handled.current.guesses = 0;
     setOverlay('none');
     AccessibilityInfo.announceForAccessibility(
       `Neue Runde: ${length} Buchstaben, ${Math.ceil(length / 2) + 3} Versuche.`,
@@ -146,42 +167,21 @@ function Game() {
   }, [settings.validation, isKnownWord]);
 
   // React to what the reducer produced, rather than duplicating its rules here.
-  const handled = useRef({ guesses: 0, rejectionAt: 0 });
+  // `finished` is keyed on the round, not on a guess count, because giving up ends a
+  // round without adding a guess.
+  const handled = useRef({ guesses: 0 });
+  const finished = useRef<string | null>(null);
 
+  // Announce each scored row, and keep the in-flight round saved.
   useEffect(() => {
     if (game.status === 'setup') return;
+    if (game.guesses.length <= handled.current.guesses) return;
 
-    if (game.guesses.length > handled.current.guesses) {
-      handled.current.guesses = game.guesses.length;
-      const scored = game.guesses[game.guesses.length - 1]!;
-      AccessibilityInfo.announceForAccessibility(describeGuess(scored.letters, scored.marks));
+    handled.current.guesses = game.guesses.length;
+    const scored = game.guesses[game.guesses.length - 1]!;
+    AccessibilityInfo.announceForAccessibility(describeGuess(scored.letters, scored.marks));
 
-      if (isRoundOver(game)) {
-        const won = game.status === 'won';
-        const inProgress = { ...store.inProgress };
-        delete inProgress[game.length];
-        persist(recordResult(
-          {
-            ...store,
-            inProgress,
-            dailyDone: game.mode === 'daily'
-              ? { ...store.dailyDone, [game.length]: game.date }
-              : store.dailyDone,
-          },
-          game.length,
-          {
-            won,
-            attempts: game.guesses.length,
-            answerId: game.answerId,
-            // Only the daily round moves a streak; practice would make it meaningless.
-            countsForStreak: game.mode === 'daily',
-          },
-        ));
-        const delay = game.length * 60 + 260;
-        const timer = setTimeout(() => setOverlay('reveal'), delay);
-        return () => clearTimeout(timer);
-      }
-
+    if (!isRoundOver(game)) {
       // Save the round in flight so a kill-and-reopen resumes it.
       persist({
         ...store,
@@ -196,7 +196,41 @@ function Game() {
         },
       });
     }
-    return undefined;
+  }, [game, store, persist]);
+
+  // Record the result and reveal the word. Fires for a win, for running out of
+  // attempts, and for giving up.
+  useEffect(() => {
+    if (!isRoundOver(game)) return;
+    const key = `${game.answerId}:${game.date}:${game.mode}`;
+    if (finished.current === key) return;
+    finished.current = key;
+
+    const inProgress = { ...store.inProgress };
+    delete inProgress[game.length];
+    persist(recordResult(
+      {
+        ...store,
+        inProgress,
+        dailyDone: game.mode === 'daily'
+          ? { ...store.dailyDone, [game.length]: game.date }
+          : store.dailyDone,
+      },
+      game.length,
+      {
+        won: game.status === 'won',
+        attempts: game.guesses.length,
+        answerId: game.answerId,
+        // Only the daily round moves a streak; practice would make it meaningless.
+        countsForStreak: game.mode === 'daily',
+      },
+    ));
+
+    // Let the last row finish flipping before the card covers it. Giving up has no
+    // row to flip, so it reveals immediately.
+    const delay = game.status === 'lost' && game.guesses.length === 0 ? 0 : game.length * 60 + 260;
+    const timer = setTimeout(() => setOverlay('reveal'), delay);
+    return () => clearTimeout(timer);
   }, [game, store, persist]);
 
   useEffect(() => {
@@ -252,6 +286,7 @@ function Game() {
   const goHome = useCallback(() => {
     dispatch({ type: 'RESET' });
     handled.current.guesses = 0;
+    setConfirmingGiveUp(false);
     setOverlay('none');
   }, []);
 
@@ -298,12 +333,13 @@ function Game() {
                 tileSize={tileSize}
               />
             </View>
+            <GiveUpRow theme={theme} confirming={confirmingGiveUp} onPress={giveUp} />
             <Keyboard
               states={keyboardState(game.guesses)}
               theme={theme}
-              onLetter={(letter) => dispatch({ type: 'TYPE_LETTER', letter })}
+              onLetter={(letter) => { setConfirmingGiveUp(false); dispatch({ type: 'TYPE_LETTER', letter }); }}
               onEnter={submit}
-              onBackspace={() => dispatch({ type: 'BACKSPACE' })}
+              onBackspace={() => { setConfirmingGiveUp(false); dispatch({ type: 'BACKSPACE' }); }}
             />
           </>
         )}

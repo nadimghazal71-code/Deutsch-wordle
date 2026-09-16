@@ -127,7 +127,7 @@ repository root and maps three aliases:
 | `@store/*` | `../src/store/*` | The persisted shape, migrations and the stats rules |
 | `@data/*` | `../src/data/*` | The generated word bundles and guess dictionaries |
 
-So a fix to the tile algorithm or a new word fixes both apps, and the 82 unit tests
+So a fix to the tile algorithm or a new word fixes both apps, and the 92 unit tests
 at the repository root cover this app's game logic too.
 
 Two Metro details worth knowing, both learned the hard way:
@@ -169,7 +169,7 @@ Run here, all passing:
 - `npx tsc --noEmit` — clean, with `strict` plus `noUncheckedIndexedAccess`
 - `npx expo export --platform android` — Metro bundles all 628 modules and **hermesc
   compiles them to Hermes bytecode** (`index.hbc`, 3 MB — most of the growth is the
-  98,000-form guess dictionary), so the JS is valid for the engine that will run it
+  97,000-form guess dictionary), so the JS is valid for the engine that will run it
 - `npx expo prebuild --platform android --clean` — generates a valid Android project;
   `applicationId com.deutschwordle.app`, `versionCode 1`, Gradle 9.3.1, new
   architecture and Hermes both on. This is also what caught a real config bug:
@@ -177,7 +177,7 @@ Run here, all passing:
   which is now a dependency
 - `npx expo-doctor` — 19 of 21 checks pass. The two failures are the sandbox's proxy
   blocking `api.expo.dev` and the React Native Directory, not project problems
-- `npm test` at the repository root — 82 unit tests, which are this app's game logic
+- `npm test` at the repository root — 92 unit tests, which are this app's game logic
 
 **Not verified, because the Android SDK cannot be installed here:** `gradlew
 assembleRelease`, the APK, and anything about how it looks or feels on a real device.
