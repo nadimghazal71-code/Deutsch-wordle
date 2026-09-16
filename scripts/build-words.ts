@@ -7,12 +7,13 @@
  *
  *   npm run build:words
  */
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { LENGTHS } from '../src/core/types.js';
 import type { Word } from '../src/core/types.js';
 
 const DATA_DIR = 'data/words';
+const DICT_DIR = 'data/dictionary';
 const OUT_DIR = 'src/data';
 /** Below this, a length does not have enough answers to be worth offering. */
 const MIN_POOL = 30;
@@ -114,21 +115,73 @@ function main(): void {
     writeFileSync(join(OUT_DIR, `words.${n}.json`), JSON.stringify(sorted) + '\n');
   }
 
-  // The dictionary validation tier needs more than the answers: a player must be able
-  // to spend a guess on a plural or a participle. Everything here is either a curated
-  // lemma or a grammatical form of one, so it ships with the app.
-  const guesses = new Set<string>();
-  for (const w of words) {
-    guesses.add(w.lemma);
-    for (const form of [w.plural, w.partizip2]) {
-      const f = form?.toLowerCase();
-      if (f && LEMMA_RE.test(f)) guesses.add(f);
+  // Guess validation. The dictionary is a full German word list (data/dictionary/,
+  // produced by scripts/import_dictionary.py), unioned with the curated lemmas and
+  // their plurals and participles. The union is belt-and-braces: a dictionary that
+  // failed to contain one of the game's own answers would reject it, which is the
+  // worst bug this project can ship, so the forms are added rather than assumed.
+  //
+  // Nothing here can become an answer. Answers come only from data/words/.
+  let totalGuesses = 0;
+  for (const n of LENGTHS) {
+    const accepted = new Set<string>();
+
+    const dictPath = join(DICT_DIR, `${n}.txt`);
+    if (!existsSync(dictPath)) {
+      errors.push(`missing guess dictionary ${dictPath} — run scripts/import_dictionary.py`);
+      continue;
+    }
+    for (const line of readFileSync(dictPath, 'utf8').split('\n')) {
+      const word = line.trim();
+      if (!word) continue;
+      if (letters(word).length !== n || !LEMMA_RE.test(word)) {
+        errors.push(`${dictPath}: ${word} is not ${n} plain German letters`);
+        continue;
+      }
+      accepted.add(word);
+    }
+
+    for (const w of words) {
+      for (const form of [w.lemma, w.plural?.toLowerCase(), w.partizip2?.toLowerCase()]) {
+        if (form && letters(form).length === n && LEMMA_RE.test(form)) accepted.add(form);
+      }
+    }
+
+    // Sorted by code unit, which is what core/dictionary.ts binary-searches by.
+    const sorted = [...accepted].sort();
+    for (let i = 1; i < sorted.length; i++) {
+      if (!(sorted[i - 1]! < sorted[i]!)) {
+        errors.push(`length ${n}: guess bundle is not strictly sorted at ${sorted[i - 1]} / ${sorted[i]}`);
+        break;
+      }
+    }
+    const joined = sorted.join('');
+    if (joined.length !== sorted.length * n) {
+      errors.push(`length ${n}: guess bundle is ${joined.length} chars, expected ${sorted.length * n}`);
+    }
+
+    writeFileSync(
+      join(OUT_DIR, `guesses.${n}.json`),
+      JSON.stringify({ n, count: sorted.length, words: joined }) + '\n',
+    );
+    totalGuesses += sorted.length;
+
+    // Every answer of this length must be accepted as a guess.
+    for (const w of words) {
+      if (letters(w.lemma).length === n && !accepted.has(w.lemma)) {
+        fail(w.lemma, 'answer is not accepted by its own guess dictionary');
+      }
     }
   }
-  writeFileSync(join(OUT_DIR, 'guesses.json'), JSON.stringify([...guesses].sort()) + '\n');
+
+  if (errors.length > 0) {
+    console.error(`\n✗ ${errors.length} problem(s):\n`);
+    for (const e of errors) console.error(`  ${e}`);
+    process.exit(1);
+  }
 
   const answers = words.filter((w) => w.answer);
-  console.log(`✓ ${words.length} entries valid — ${answers.length} answers, ${guesses.size} accepted guesses\n`);
+  console.log(`✓ ${words.length} entries valid — ${answers.length} answers, ${totalGuesses.toLocaleString()} accepted guesses\n`);
   console.log('len | answers | A1 | A2 | nouns | verbs | other | with ä ö ü ß');
   console.log('----+---------+----+----+-------+-------+-------+-------------');
   for (const n of LENGTHS) {

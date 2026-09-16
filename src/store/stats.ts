@@ -45,10 +45,11 @@ export interface Store {
 }
 
 export const defaultSettings = (): Settings => ({
-  // `open` is the default rather than `dictionary`: shipping a full German word list
-  // is a licensing question (see docs/word-list.md § 4), and rejecting a beginner's
-  // real word is worse than accepting a nonsense one.
-  validation: 'open',
+  // `dictionary` checks the guess against a full German word list (~98,000 forms at
+  // 3-8 letters). This is the point of a Wordle: a guess that is not a word tells you
+  // nothing, so accepting one is not leniency, it is a broken game. `open` remains
+  // available in settings for anyone who finds rejection discouraging.
+  validation: 'dictionary',
   hints: false,
   palette: 'default',
   glyphs: false,

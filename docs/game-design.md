@@ -218,22 +218,20 @@ tiers, and the tier is a **setting** because the right answer differs by audienc
 | Tier | Accepts | For |
 | --- | --- | --- |
 | `strict` | Only words in the A1/A2 answer pool | Players who want the pool to be the dictionary |
-| `dictionary` | Any word in the shipped guess list (§ [word-list.md](word-list.md#4-the-extended-guess-list)) | Everyone. Lets you use `Tassen` to probe even if the plural is not a possible answer |
-| `open` *(default)* | Any sequence of German letters | Absolute beginners, and anyone who finds rejection discouraging |
+| `dictionary` *(default)* | Any real German word of the right length — ~98,000 forms, see [word-list.md § 4](word-list.md#4-the-guess-dictionary) | Everyone. Lets you spend a guess on `gehen` to probe letters, even though it is not a possible answer |
+| `open` | Any sequence of German letters | Absolute beginners, and anyone who finds rejection discouraging |
 
 Rejected guesses do **not** consume an attempt. They shake the row and announce
 *„Das Wort kenne ich nicht"* via the live region. `open` mode never rejects.
 
-`strict` is frustrating — you cannot spend a guess on a letter-probe — and `open`
-lets a player brute-force letter positions with nonsense, which trains nothing. So
-`dictionary` is the right default **once a real dictionary exists**.
+**`dictionary` is the default, and rejecting a non-word is not a nicety — it is the
+game.** A guess that is not a word carries no information: the player learns nothing
+from the colours, and nothing stops them brute-forcing positions one letter at a time
+with nonsense. `strict` is too tight in the other direction (you cannot spend a guess
+on a letter-probe), which leaves `dictionary` as the only tier that plays like Wordle.
 
-> **The shipped default is `open`, and that is a compromise, not the design.** The
-> guess list that ships contains only the curated lemmas and their inflected forms
-> (540 words), because a full German word list is a licensing question this project
-> has not settled. With a list that small, `dictionary` would reject `essen` — a word
-> squarely in the A1 vocabulary — which is a worse failure than accepting nonsense.
-> When a properly-licensed word list lands, the default becomes `dictionary`.
+`open` stays in settings for an absolute beginner who finds rejection discouraging,
+but it is no longer what anybody gets by default.
 
 ---
 

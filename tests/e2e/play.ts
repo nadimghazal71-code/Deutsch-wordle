@@ -62,16 +62,34 @@ const keyColoured = await page.locator('.key[data-state]').count();
 check('keyboard picks up letter states', keyColoured > 0, `${keyColoured} keys coloured`);
 await page.screenshot({ path: `${SHOTS}/3-scored.png` });
 
+// ── a non-word must be rejected: this is what makes it a Wordle ──
+await page.keyboard.type('xxxxx');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(250);
+check('a non-word is rejected', await page.locator('.tile[data-mark]').count() === LENGTH,
+  `${await page.locator('.tile[data-mark]').count()} marked tiles — a second row would mean it was accepted`);
+check('the rejection is announced', ((await page.locator('.toast').textContent()) ?? '').includes('kenne ich nicht'));
+check('the rejected guess keeps its letters for editing',
+  (await page.locator('.row').nth(1).locator('.tile').allTextContents()).join('') === 'XXXXX');
+for (let i = 0; i < LENGTH; i++) await page.keyboard.press('Backspace');
+
+// ── a real German word that is not an answer must be accepted ──
+await page.keyboard.type('gehen');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+check('a real word that is not an answer is accepted', await page.locator('.tile[data-mark]').count() === LENGTH * 2,
+  `${await page.locator('.tile[data-mark]').count()} marked tiles`);
+
 // ── the umlaut dead key ──
 await page.keyboard.press(';');
 await page.keyboard.press('u');
-const afterDead = await page.locator('.row').nth(1).locator('.tile').first().textContent();
+const afterDead = await page.locator('.row').nth(2).locator('.tile').first().textContent();
 check('dead key `;u` produces Ü', afterDead === 'Ü', `got ${afterDead}`);
 for (let i = 0; i < 1; i++) await page.keyboard.press('Backspace');
 
 // ── ss must stay ss, not become ß ──
 await page.keyboard.type('ss');
-const twoTiles = await page.locator('.row').nth(1).locator('.tile').allTextContents();
+const twoTiles = await page.locator('.row').nth(2).locator('.tile').allTextContents();
 check('typing "ss" stays SS', twoTiles.slice(0, 2).join('') === 'SS', twoTiles.slice(0, 3).join(''));
 await page.keyboard.press('Backspace');
 await page.keyboard.press('Backspace');

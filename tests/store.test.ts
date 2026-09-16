@@ -66,7 +66,7 @@ describe('stats', () => {
     expect(statsFor(store, 5).distribution).toEqual([1, 2, 0, 0, 0, 0]);
   });
 
-  it('defaults guess validation to open', () => {
-    expect(defaultSettings().validation).toBe('open');
+  it('defaults guess validation to dictionary, so a non-word is rejected', () => {
+    expect(defaultSettings().validation).toBe('dictionary');
   });
 });

@@ -8,6 +8,7 @@ import { keyboardState } from './core/keyboard-state.js';
 import { reduce, initialState, shareText, isRoundOver, type GameState } from './core/game.js';
 import { letters, toComparable, isDeadKey, isGermanLetter } from './core/normalise.js';
 import { answersOfLength, dailyAnswer, practiceAnswer, isoDate } from './core/select.js';
+import { hasWord, type Dictionary } from './core/dictionary.js';
 import { LENGTHS, isLength, type Length, type Word } from './core/types.js';
 import { load, save, recordResult, statsFor, type Settings, type Store } from './store/persist.js';
 
@@ -17,10 +18,33 @@ import words5 from './data/words.5.json';
 import words6 from './data/words.6.json';
 import words7 from './data/words.7.json';
 import words8 from './data/words.8.json';
-import guessList from './data/guesses.json';
+
 
 const WORDS: Word[] = [...words3, ...words4, ...words5, ...words6, ...words7, ...words8] as Word[];
-const GUESSES = new Set<string>(guessList as string[]);
+/**
+ * The guess dictionaries are ~700KB of words in total, so the web build loads only
+ * the length being played. Vite code-splits these dynamic imports into one chunk per
+ * length; the mobile app imports them statically instead, because Metro produces a
+ * single bundle either way. See core/dictionary.ts.
+ */
+const DICTIONARY_LOADERS: Record<Length, () => Promise<{ default: unknown }>> = {
+  3: () => import('./data/guesses.3.json'),
+  4: () => import('./data/guesses.4.json'),
+  5: () => import('./data/guesses.5.json'),
+  6: () => import('./data/guesses.6.json'),
+  7: () => import('./data/guesses.7.json'),
+  8: () => import('./data/guesses.8.json'),
+};
+
+const dictionaries = new Map<Length, Dictionary>();
+
+async function ensureDictionary(length: Length): Promise<Dictionary> {
+  const cached = dictionaries.get(length);
+  if (cached) return cached;
+  const loaded = (await DICTIONARY_LOADERS[length]()).default as Dictionary;
+  dictionaries.set(length, loaded);
+  return loaded;
+}
 const POOLS = Object.fromEntries(
   LENGTHS.map((n) => [n, answersOfLength(WORDS, n)]),
 ) as Record<Length, Word[]>;
@@ -53,9 +77,12 @@ const root = document.getElementById('app')!;
 
 /* ───────────────────────────── actions ───────────────────────────── */
 
-function startRound(length: Length, mode: 'daily' | 'practice'): void {
+async function startRound(length: Length, mode: 'daily' | 'practice'): Promise<void> {
   const pool = POOLS[length];
   if (pool.length === 0) return;
+  // Loaded before the round begins, so a guess is never judged against a dictionary
+  // that has not arrived.
+  await ensureDictionary(length);
 
   const today = isoDate();
   const seen = statsFor(app.store, length).wordsSeen;
@@ -99,9 +126,17 @@ function submit(): void {
 }
 
 function isKnownWord(word: string): boolean {
-  const tier = app.store.settings.validation;
-  if (tier === 'strict') return POOLS[app.game.length].some((w) => w.lemma === word);
-  return GUESSES.has(word);
+  // `strict` limits guesses to the answer pool; `dictionary` accepts any real German
+  // word of the right length. `open` never reaches here — the reducer skips the check.
+  if (app.store.settings.validation === 'strict') {
+    return POOLS[app.game.length].some((w) => w.lemma === word);
+  }
+  const dictionary = dictionaries.get(app.game.length);
+  // startRound awaits the load, so this is only reachable in the moment after a
+  // restored round before its chunk arrives. Accept rather than reject: wrongly
+  // rejecting a real word is the worse failure.
+  if (!dictionary) return true;
+  return hasWord(dictionary, word);
 }
 
 function finishRound(game: GameState): void {
@@ -176,6 +211,7 @@ function restoreRound(): boolean {
       game = reduce(game, { type: 'SUBMIT', tier: 'open', isKnownWord: () => true });
     }
     if (isRoundOver(game)) continue; // nothing worth resuming
+    void ensureDictionary(length);
     app.game = game;
     app.selectedLength = length;
     app.mode = saved.mode;
@@ -225,9 +261,15 @@ function render(): void {
 
   if (app.game.status === 'setup') {
     root.append(renderSetup(POOL_SIZES, app.selectedLength, app.mode, isDailyDone, {
-      onChoose: (length) => { app.selectedLength = length; render(); },
+      onChoose: (length) => {
+        app.selectedLength = length;
+        // Fetch the dictionary while the player is still choosing, so pressing
+        // Spielen never waits on it.
+        void ensureDictionary(length);
+        render();
+      },
       onMode: (mode) => { app.mode = mode; render(); },
-      onStart: () => { if (app.selectedLength !== null) startRound(app.selectedLength, app.mode); },
+      onStart: () => { if (app.selectedLength !== null) void startRound(app.selectedLength, app.mode); },
     }));
   } else {
     root.append(el('div', { class: 'board-area' }, [renderGrid(app.game)]));
@@ -246,7 +288,7 @@ function render(): void {
         attempts: app.game.guesses.length,
         maxAttempts: app.game.maxAttempts,
       }, {
-        onPlayAgain: () => startRound(app.game.length, app.game.mode === 'daily' ? 'practice' : app.game.mode),
+        onPlayAgain: () => void startRound(app.game.length, app.game.mode === 'daily' ? 'practice' : app.game.mode),
         onStats: () => { app.overlay = 'stats'; render(); },
         onShare: () => void share(),
         onClose: () => { app.game = reduce(app.game, { type: 'RESET' }); app.overlay = 'none'; render(); },

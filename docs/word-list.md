@@ -210,31 +210,95 @@ prints the letter-frequency table.
 
 ---
 
-## 4. The extended guess list
+## 4. The guess dictionary
 
-Answers come from the curated set. **Guesses** should be checked against a much larger
-list, so a player can spend a guess on a probe like `essen` without it being a
-candidate answer.
+Answers and guesses come from two different places, and conflating them is the mistake
+that makes a Wordle clone feel wrong:
 
-**What ships today** is smaller than that: `build:words` generates
-`src/data/guesses.json` from the curated lemmas plus their plurals and participles —
-540 words. Everything in it is either a word this project curated or a plain
-grammatical form of one, so there is no licensing question. It is enough to make the
-`dictionary` tier meaningful (`Tassen` and `gearbeitet` are accepted) but far too
-small to be the default: it would reject `essen`. Hence
-[the `open` default](game-design.md#5-guess-validation).
+- **Answers** — the 347 curated A1/A2 words in `data/words/`. Nothing else can ever be
+  the answer.
+- **Guesses** — a full German word list, so that a guess which is not a German word is
+  rejected instead of being scored. **A non-word guess is not leniency, it is a broken
+  game:** the colours it returns teach the player nothing, and accepting them lets a
+  player brute-force letter positions with nonsense.
 
-**What a real guess list needs:** an open licence, lowercase, one word per line,
-filtered to `/^[a-zäöüß]{3,8}$/`, NFC. A German Hunspell or `wordlist-german` dump
-filtered this way is around 50k words at these lengths — small enough to ship as a
-compressed set and check in memory, with no network call on the guess path. Adding one
-is what flips the default to `dictionary`.
+### What ships
 
-Every curated lemma must also be present in the guess list; the build and
-`tests/data.test.ts` both assert this, because a valid answer the game rejects as a
-guess is the worst possible bug.
+| | |
+| --- | --- |
+| Source | A full German word list, ~1.9M inflected forms, supplied for this project |
+| Committed | `data/dictionary/<n>.txt` — filtered, lowercased, NFC, sorted, one word per line (~800 KB) |
+| Generated | `src/data/guesses.<n>.json` by `npm run build:words` |
+| Total accepted | **98,035 forms** at 3–8 letters |
 
----
+| Length | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --: | --: | --: | --: | --: | --: |
+| Accepted guesses | 1,038 | 2,689 | 6,781 | 13,602 | 25,455 | 48,470 |
+
+`scripts/import_dictionary.py` does the filtering. The raw list is ~30 MB and is **not**
+committed; the filtered per-length lists are, because they are small, diffable, and
+the thing the build actually consumes:
+
+```bash
+python3 scripts/import_dictionary.py --list path/to/wordlist-german.txt
+```
+
+Filtering drops everything outside 3–8 letters (1.8M forms — the list is full of
+compounds like `Weltkriegszusammenhanges`) and the 290 forms containing characters
+outside the game's alphabet (`café`, `crêpe`, `façon`) — those could never be typed on
+a 30-key German keyboard anyway.
+
+### The storage format, and why it is a single string
+
+Every word in a bundle has exactly `n` letters, so no separators are needed. Each
+bundle is one sorted, concatenated string plus a count:
+
+```json
+{ "n": 5, "count": 6781, "words": "aalenaalesaalstaalte…" }
+```
+
+`core/dictionary.ts` binary-searches it by slicing at `index * n`. This is not
+premature cleverness; it buys three things that matter:
+
+1. **No startup allocation.** A `Set` of 98,000 strings would be built on every launch.
+   This is six string constants, and on mobile they land in the Hermes bytecode.
+2. **A quarter less space.** A JSON array of 48,470 eight-letter words spends three
+   characters per word on quotes and commas; concatenation spends none.
+3. **Lookup without parsing.** `hasWord` reads the string directly.
+
+The order must be a plain code-unit sort, because that is what `<` compares in
+JavaScript. Every character here is in the BMP, where code point and code unit order
+agree, so Python's `sorted()` and JavaScript's `<` produce the same order — and
+`build-words.ts` **asserts the bundle is strictly sorted**, because a mis-sorted bundle
+would make the binary search silently miss words rather than fail loudly.
+
+### The invariant that matters most
+
+**The dictionary must never reject one of the game's own answers.** That would show the
+player a valid answer being refused, with no way to win. So the build unions the
+dictionary with every curated lemma and its plural and participle, and then asserts
+that every answer is accepted. `tests/dictionary.test.ts` asserts it again over the
+shipped bundles. As it happens the supplied list already contains all 347 answers and
+all 540 forms, so the union currently adds nothing — it is there so that swapping the
+word list cannot quietly break the game.
+
+### Loading
+
+The bundles total ~700 KB, which is handled differently per platform:
+
+- **Web** — one dynamic `import()` per length, so Vite code-splits them and a round
+  fetches only its own (17 KB gzipped at five letters; the main bundle stays 35 KB).
+  The dictionary is fetched when a length is selected, before the round can start.
+- **Mobile** — static imports. Metro emits one bundle regardless, so splitting would
+  buy nothing; the Hermes bytecode grows from 1.6 MB to 3 MB.
+
+### Licence
+
+The word list was supplied for this project. Before distributing the app, confirm its
+licence and add the required attribution — a full-form German word list is usually
+derived from a Hunspell or `wordlist-german` corpus under a free licence, but "usually"
+is not a licence review. This is separate from the Goethe question in § 1: that one
+governs which words are *taught*, this one which words are *accepted*.
 
 ## 5. Writing definitions
 

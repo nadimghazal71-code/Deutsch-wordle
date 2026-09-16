@@ -12,6 +12,7 @@ import { keyboardState } from '@core/keyboard-state';
 import { letters, toComparable } from '@core/normalise';
 import { answersOfLength, dailyAnswer, isoDate, practiceAnswer } from '@core/select';
 import { LENGTHS, type Length, type Word } from '@core/types';
+import { hasWord, type Dictionary } from '@core/dictionary';
 import { freshStore, recordResult, statsFor, type Settings, type Store } from '@store/stats';
 
 import { load, save } from './storage';
@@ -28,10 +29,18 @@ import words5 from '@data/words.5.json';
 import words6 from '@data/words.6.json';
 import words7 from '@data/words.7.json';
 import words8 from '@data/words.8.json';
-import guessList from '@data/guesses.json';
+import guesses3 from '@data/guesses.3.json';
+import guesses4 from '@data/guesses.4.json';
+import guesses5 from '@data/guesses.5.json';
+import guesses6 from '@data/guesses.6.json';
+import guesses7 from '@data/guesses.7.json';
+import guesses8 from '@data/guesses.8.json';
 
 const WORDS = [...words3, ...words4, ...words5, ...words6, ...words7, ...words8] as Word[];
-const GUESSES = new Set<string>(guessList as string[]);
+/** One guess dictionary per length, binary-searched — see core/dictionary.ts. */
+const DICTIONARIES = {
+  3: guesses3, 4: guesses4, 5: guesses5, 6: guesses6, 7: guesses7, 8: guesses8,
+} as unknown as Record<Length, Dictionary>;
 const POOLS = Object.fromEntries(LENGTHS.map((n) => [n, answersOfLength(WORDS, n)])) as Record<Length, Word[]>;
 const POOL_SIZES = Object.fromEntries(LENGTHS.map((n) => [n, POOLS[n].length])) as Record<Length, number>;
 const BY_ID = new Map(WORDS.map((w) => [w.id, w]));
@@ -126,8 +135,10 @@ function Game() {
   }, [store]);
 
   const isKnownWord = useCallback((word: string) => {
+    // `strict` limits guesses to the answer pool; `dictionary` accepts any real German
+    // word of the right length. `open` never reaches here — the reducer skips the check.
     if (settings.validation === 'strict') return POOLS[game.length].some((w) => w.lemma === word);
-    return GUESSES.has(word);
+    return hasWord(DICTIONARIES[game.length], word);
   }, [settings.validation, game.length]);
 
   const submit = useCallback(() => {

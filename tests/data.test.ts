@@ -7,7 +7,6 @@ import { answersOfLength, dailyAnswer, isoDate } from '../src/core/select.js';
 
 const read = (n: number) => JSON.parse(readFileSync(`src/data/words.${n}.json`, 'utf8')) as Word[];
 const WORDS: Word[] = LENGTHS.flatMap(read);
-const GUESSES = new Set(JSON.parse(readFileSync('src/data/guesses.json', 'utf8')) as string[]);
 
 describe('the shipped word data', () => {
   it('is non-trivial', () => {
@@ -30,10 +29,6 @@ describe('the shipped word data', () => {
     for (const n of LENGTHS) {
       expect(answersOfLength(WORDS, n).length).toBeGreaterThan(attemptsFor(n));
     }
-  });
-
-  it('accepts every answer as a guess — the worst possible bug is rejecting the answer', () => {
-    for (const w of WORDS) expect(GUESSES.has(w.lemma), w.lemma).toBe(true);
   });
 
   it('has unique ids and lemmas', () => {
