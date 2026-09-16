@@ -76,15 +76,27 @@ npm run apk:arm64
 
 ### Cloud build (EAS)
 
-No Android SDK needed locally:
+No Android SDK, no JDK, no Gradle needed locally — Expo's servers do the build:
 
 ```bash
-npx eas login
-npm run apk:cloud    # eas build --platform android --profile preview
+cd mobile
+npm install
+npm run eas:login    # npx eas-cli@latest login  (a free Expo account)
+npm run apk:cloud    # npx eas-cli@latest build --platform android --profile preview
 ```
 
+Both scripts go through `npx`, so there is nothing to install globally. On the first
+Android build EAS asks whether to **generate a new Android keystore** — say yes, and
+it keeps the key for you. The build runs on Expo's queue and prints a URL; when it
+finishes, that page has the APK to download, or `npx eas-cli@latest build:list`
+shows it.
+
+On Windows, PowerShell's execution policy applies here too — see above.
+
 The `preview` profile in [eas.json](eas.json) is set to `buildType: apk`, so you get
-an APK rather than an AAB. `production` builds an app-bundle for the Play Store.
+an APK rather than an AAB. `production` builds an app-bundle for the Play Store. No
+profile sets an EAS Update `channel`, because this app does not use `expo-updates`;
+adding a channel without it makes the build fail.
 
 > **One caveat, untested.** This app imports `../src/core`, `../src/store` and
 > `../src/data`, which sit outside `mobile/`. Metro is configured for that and it

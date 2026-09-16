@@ -11,7 +11,8 @@
     "prebuild": "expo prebuild --platform android --clean",
     "apk": "expo prebuild --platform android --clean && node scripts/gradle.mjs assembleRelease",
     "apk:arm64": "expo prebuild --platform android --clean && node scripts/gradle.mjs assembleRelease -PreactNativeArchitectures=arm64-v8a",
-    "apk:cloud": "eas build --platform android --profile preview"
+    "apk:cloud": "npx eas-cli@latest build --platform android --profile preview",
+    "eas:login": "npx eas-cli@latest login"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

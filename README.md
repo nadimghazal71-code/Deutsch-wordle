@@ -85,8 +85,9 @@ npx tsx tests/e2e/narrow.ts    # 8-letter grid at 320px, checks for overflow
 ### Android app
 
 ```bash
-cd mobile && npm install && npm start   # play it on a phone via Expo Go, no build
-cd mobile && npm install && npm run apk # or build the APK
+cd mobile && npm install && npm start       # play it on a phone via Expo Go, no build
+cd mobile && npm install && npm run apk     # build the APK locally (needs the Android SDK)
+cd mobile && npm install && npm run apk:cloud   # or build it on Expo's servers
 ```
 
 On Windows, PowerShell blocks npm until you either run
